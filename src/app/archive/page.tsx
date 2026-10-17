@@ -23,7 +23,7 @@ export default async function ArchivePage() {
           Three demonstration files.
         </h1>
         <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
-          Each file is fictional and already public inside Hearth. Clone one into a private room
+          Each file is fictional and already public inside Clonacase. Clone one into a private room
           before you add a note. The original timeline does not change.
         </p>
       </Rise>

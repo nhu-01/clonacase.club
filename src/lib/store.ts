@@ -67,7 +67,8 @@ function seedStore(store: Store) {
   }
 
   for (const demo of DEMO_ACCOUNTS) {
-    if (!store.users.some((user) => user.email === demo.email)) {
+    const existing = store.users.find((user) => user.id === demo.id)
+    if (!existing) {
       store.users.push({
         id: demo.id,
         name: demo.name,
@@ -75,6 +76,10 @@ function seedStore(store: Store) {
         passwordHash: hashPassword(demo.password),
         createdAt: "2024-05-01T00:00:00.000Z",
       })
+      changed = true
+    } else if (existing.email !== demo.email || existing.name !== demo.name) {
+      existing.email = demo.email
+      existing.name = demo.name
       changed = true
     }
   }

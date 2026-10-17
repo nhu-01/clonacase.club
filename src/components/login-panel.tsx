@@ -50,8 +50,8 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
           both desks is <span className="text-foreground">watchlight</span>.
         </p>
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <DemoDesk name="Ada Voss" email="ada@hearth.local" nextPath={nextPath} />
-          <DemoDesk name="Leif Moran" email="leif@hearth.local" nextPath={nextPath} />
+          <DemoDesk name="Ada Voss" email="ada@clonacase.club" nextPath={nextPath} />
+          <DemoDesk name="Leif Moran" email="leif@clonacase.club" nextPath={nextPath} />
         </div>
       </div>
       <div className="flex flex-col justify-end gap-10">

@@ -70,7 +70,7 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
           ))}
         </div>
         <p className="mt-10 max-w-xs text-xs leading-5 text-muted-foreground">
-          These three people are fictional. Hearth does not search the web, scrape accounts, or
+          These three people are fictional. Clonacase does not search the web, scrape accounts, or
           name a suspect.
         </p>
       </div>

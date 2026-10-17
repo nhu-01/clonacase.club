@@ -258,13 +258,13 @@ export const DEMO_ACCOUNTS = [
   {
     id: "user-ada",
     name: "Ada Voss",
-    email: "ada@hearth.local",
+    email: "ada@clonacase.club",
     password: "watchlight",
   },
   {
     id: "user-leif",
     name: "Leif Moran",
-    email: "leif@hearth.local",
+    email: "leif@clonacase.club",
     password: "watchlight",
   },
 ] as const

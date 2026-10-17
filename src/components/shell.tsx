@@ -24,7 +24,7 @@ export function Shell({ user }: { user: PublicUser | null }) {
           <span className="text-primary">
             <Mark />
           </span>
-          <span className="font-heading text-lg tracking-tight">Hearth</span>
+          <span className="font-heading text-lg tracking-tight">Clonacase</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm text-muted-foreground sm:gap-2">
           <Link href="/archive" className="rounded-md px-2 py-1 transition-colors hover:text-foreground">
