@@ -35,7 +35,7 @@ You can also open your own desk from the sign-in page.
 
 Rooms, notes, and accounts are stored in `data/store.json` on the machine running the app. That folder is local and is not committed.
 
-On Vercel the disk is read-only, so the same desk is kept in the server’s memory. Sign-in still works. A room can disappear when that server sleeps, and two copies of the app do not share rooms.
+On Vercel the disk is read-only, so rooms, notes, and new accounts are kept in a shared document. A visit on a new server can still open them. That document is a prototype desk: if it is cleared, the rooms go with it and the two sample accounts are created again.
 
 ## Stack
 

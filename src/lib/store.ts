@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto"
 import { mkdir, readFile, writeFile } from "fs/promises"
 import path from "path"
+import { loadRemoteDesk, saveRemoteDesk } from "@/lib/remote-desk"
 import { CASES, DEMO_ACCOUNTS, SEEDED_CONNECTION } from "@/lib/seed"
 import { hashPassword } from "@/lib/session"
 import type {
@@ -43,11 +44,27 @@ function blankStore(): Store {
 }
 
 function seedStore(store: Store) {
-  if (!store.users) store.users = []
-  if (!store.clones) store.clones = []
-  if (!store.connections) store.connections = []
-  if (!store.messages) store.messages = []
-  store.version = VERSION
+  let changed = false
+  if (!store.users) {
+    store.users = []
+    changed = true
+  }
+  if (!store.clones) {
+    store.clones = []
+    changed = true
+  }
+  if (!store.connections) {
+    store.connections = []
+    changed = true
+  }
+  if (!store.messages) {
+    store.messages = []
+    changed = true
+  }
+  if (store.version !== VERSION) {
+    store.version = VERSION
+    changed = true
+  }
 
   for (const demo of DEMO_ACCOUNTS) {
     if (!store.users.some((user) => user.email === demo.email)) {
@@ -58,11 +75,14 @@ function seedStore(store: Store) {
         passwordHash: hashPassword(demo.password),
         createdAt: "2024-05-01T00:00:00.000Z",
       })
+      changed = true
     }
   }
   if (!store.connections.some((link) => link.id === SEEDED_CONNECTION.id)) {
     store.connections.push({ ...SEEDED_CONNECTION, confirmedBy: [...SEEDED_CONNECTION.confirmedBy] })
+    changed = true
   }
+  return changed
 }
 
 function memoryStore() {
@@ -74,8 +94,17 @@ function memoryStore() {
   return memory.__hearthStore
 }
 
+function hosted() {
+  return process.env.VERCEL === "1"
+}
+
 async function writeStore(store: Store) {
-  if (memory.__hearthMemory || process.env.VERCEL) {
+  if (hosted()) {
+    await saveRemoteDesk(store)
+    memory.__hearthStore = store
+    return
+  }
+  if (memory.__hearthMemory) {
     memory.__hearthStore = store
     memory.__hearthMemory = true
     return
@@ -95,7 +124,8 @@ async function writeStore(store: Store) {
 }
 
 async function ensure(): Promise<Store> {
-  if (process.env.VERCEL || memory.__hearthMemory) return memoryStore()
+  if (hosted()) return loadRemoteDesk(seedStore)
+  if (memory.__hearthMemory) return memoryStore()
 
   let store: Store
   try {
