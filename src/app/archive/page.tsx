@@ -26,6 +26,11 @@ export default async function ArchivePage() {
           Each file is fictional and already public inside Hearth. Clone one into a private room
           before you add a note. The original timeline does not change.
         </p>
+        {process.env.VERCEL ? (
+          <p className="mt-4 max-w-xl text-xs leading-5 text-muted-foreground">
+            On this host, rooms live in the server’s memory and reset when it sleeps.
+          </p>
+        ) : null}
       </Rise>
       <dl className="mt-12 grid gap-3 border-t border-border/80 pt-6 text-sm sm:grid-cols-3">
         <div>

@@ -35,6 +35,8 @@ You can also open your own desk from the sign-in page.
 
 Rooms, notes, and accounts are stored in `data/store.json` on the machine running the app. That folder is local and is not committed.
 
+On Vercel the disk is read-only, so the same desk is kept in the server’s memory. Sign-in still works. A room can disappear when that server sleeps, and two copies of the app do not share rooms.
+
 ## Stack
 
 Next.js, React, TypeScript, Tailwind, and shadcn/ui. Sign-in is a signed cookie. There is no external database and no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.

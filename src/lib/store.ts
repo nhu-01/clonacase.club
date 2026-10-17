@@ -16,6 +16,13 @@ import type {
 const FILE = path.join(process.cwd(), "data", "store.json")
 const VERSION = 1
 
+type MemoryGlobal = typeof globalThis & {
+  __hearthStore?: Store
+  __hearthMemory?: boolean
+}
+
+const memory = globalThis as MemoryGlobal
+
 let chain: Promise<unknown> = Promise.resolve()
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
@@ -31,23 +38,17 @@ function publicUser(user: User): PublicUser {
   return { id: user.id, name: user.name, email: user.email }
 }
 
-async function ensure(): Promise<Store> {
-  await mkdir(path.dirname(FILE), { recursive: true })
-  let store: Store
-  try {
-    const raw = await readFile(FILE, "utf8")
-    store = JSON.parse(raw) as Store
-  } catch {
-    store = { version: VERSION, users: [], clones: [], connections: [], messages: [] }
-  }
+function blankStore(): Store {
+  return { version: VERSION, users: [], clones: [], connections: [], messages: [] }
+}
 
+function seedStore(store: Store) {
   if (!store.users) store.users = []
   if (!store.clones) store.clones = []
   if (!store.connections) store.connections = []
   if (!store.messages) store.messages = []
   store.version = VERSION
 
-  let dirty = false
   for (const demo of DEMO_ACCOUNTS) {
     if (!store.users.some((user) => user.email === demo.email)) {
       store.users.push({
@@ -57,15 +58,55 @@ async function ensure(): Promise<Store> {
         passwordHash: hashPassword(demo.password),
         createdAt: "2024-05-01T00:00:00.000Z",
       })
-      dirty = true
     }
   }
   if (!store.connections.some((link) => link.id === SEEDED_CONNECTION.id)) {
-    store.connections.push(SEEDED_CONNECTION)
-    dirty = true
+    store.connections.push({ ...SEEDED_CONNECTION, confirmedBy: [...SEEDED_CONNECTION.confirmedBy] })
   }
-  if (dirty) await writeFile(FILE, JSON.stringify(store, null, 2))
-  return store
+}
+
+function memoryStore() {
+  if (!memory.__hearthStore) {
+    memory.__hearthStore = blankStore()
+    seedStore(memory.__hearthStore)
+  }
+  memory.__hearthMemory = true
+  return memory.__hearthStore
+}
+
+async function writeStore(store: Store) {
+  if (memory.__hearthMemory || process.env.VERCEL) {
+    memory.__hearthStore = store
+    memory.__hearthMemory = true
+    return
+  }
+  try {
+    await mkdir(path.dirname(FILE), { recursive: true })
+    await writeFile(FILE, JSON.stringify(store, null, 2))
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code === "EROFS" || code === "EACCES" || code === "EPERM" || code === "ENOENT") {
+      memory.__hearthStore = store
+      memory.__hearthMemory = true
+      return
+    }
+    throw error
+  }
+}
+
+async function ensure(): Promise<Store> {
+  if (process.env.VERCEL || memory.__hearthMemory) return memoryStore()
+
+  let store: Store
+  try {
+    const raw = await readFile(FILE, "utf8")
+    store = JSON.parse(raw) as Store
+  } catch {
+    store = blankStore()
+  }
+  seedStore(store)
+  await writeStore(store)
+  return memory.__hearthMemory ? memoryStore() : store
 }
 
 export function readStore() {
@@ -76,7 +117,7 @@ export function updateStore<T>(mutate: (store: Store) => T) {
   return enqueue(async () => {
     const store = await ensure()
     const result = mutate(store)
-    await writeFile(FILE, JSON.stringify(store, null, 2))
+    await writeStore(store)
     return result
   })
 }
