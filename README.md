@@ -2,7 +2,7 @@
 
 A dark, quiet desk for a public case file. Volunteers sign in, open a demonstration file, and clone it into a private room. The room is a timeline. Each milestone is sourced, a lead, or inconclusive. Two files can be linked only as a sourced claim, and a second volunteer has to confirm it. A draft brief cites the timeline and does not go looking.
 
-The three people in the archive are fictional. The landing search also reads adult public posters from the [Washington State Patrol missing-persons page](https://wsp.wa.gov/crime/alerts-missing-persons/missing-persons/). Photographs and PDFs stay on that site. Anyone under 18 is left out. clonacase does not scrape accounts, search the web for a suspect, or keep an offender list.
+The landing search reads adult public posters from the [Washington State Patrol missing-persons page](https://wsp.wa.gov/crime/alerts-missing-persons/missing-persons/). Choosing a name opens that person’s timeline, photograph, and poster. Photographs and PDFs stay on the state site. Anyone under 18 is left out. clonacase does not scrape accounts, search the web for a suspect, or keep an offender list.
 
 The public address is [clonacase.club](https://clonacase.club). DNS for that name is managed at Porkbun.
 

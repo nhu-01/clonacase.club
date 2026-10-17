@@ -24,6 +24,10 @@ export const washingtonSource =
 
 export const washingtonMupuPhone = "1-800-543-5678"
 
+export function washingtonById(id: string) {
+  return washingtonRecords.find((record) => record.id === id) ?? null
+}
+
 export const washingtonRecords: WashingtonRecord[] = [
   {
     "name": "Aaron Martin",

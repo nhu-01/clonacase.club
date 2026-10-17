@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     default: "clonacase",
     template: "%s · clonacase",
   },
-  description: "A private room for a public case. Sourced timelines for demonstration files.",
+  description: "Public missing-person posters from the Washington State Patrol, read as a timeline.",
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
+      data-ink="true"
       className={`${display.variable} ${outfit.variable} ${mono.variable} dark h-full antialiased`}
     >
       <body className="min-h-full">

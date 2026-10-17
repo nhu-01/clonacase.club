@@ -85,8 +85,8 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
     .join(" · ")
 
   return (
-    <article id="public-dossier" className="rise mt-8 border border-primary/35 bg-card/50">
-      <header className="border-b border-primary/25 px-5 py-6 sm:px-7">
+    <article id="public-dossier" className="mt-8 border border-primary/35 bg-card/50">
+      <header className="rise border-b border-primary/25 px-5 py-6 sm:px-7">
         <p className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">Washington public record</p>
         <h2 className="mt-3 font-heading text-4xl leading-none font-light tracking-tight sm:text-5xl">{record.name}</h2>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -99,13 +99,14 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
       <ol className="relative space-y-3 pl-8">
         <span
           aria-hidden="true"
-          className="spine absolute top-1 bottom-1 left-[7px] w-px bg-linear-to-b from-primary via-primary/45 to-transparent"
+          className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent"
+          style={{ animationDuration: "1.5s" }}
         />
         {events.map((event, index) => (
           <li
             key={event.title}
-            style={{ animationDelay: `${0.08 + index * 0.08}s` }}
-            className="rise relative border border-primary/20 bg-background/40 px-4 py-4"
+            style={{ animationDelay: `${0.4 + index * 0.28}s` }}
+            className="beat relative border border-primary/25 bg-background/40 px-4 py-4"
           >
             <span
               aria-hidden="true"
@@ -128,7 +129,7 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
       </div>
 
       <div className="grid gap-px border-t border-primary/25 bg-primary/20 md:grid-cols-3">
-        <figure className="rise flex h-full flex-col bg-card" style={{ animationDelay: "0.28s" }}>
+        <figure className="beat flex h-full flex-col bg-card" style={{ animationDelay: "1.25s" }}>
           <div className="relative">
             <svg
               aria-hidden="true"
@@ -160,8 +161,8 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
           href={record.poster}
           target="_blank"
           rel="noreferrer"
-          className="rise group flex min-h-56 flex-col justify-between bg-card px-5 py-5"
-          style={{ animationDelay: "0.36s" }}
+          className="beat group flex min-h-56 flex-col justify-between bg-card px-5 py-5"
+          style={{ animationDelay: "1.4s" }}
         >
           <span className="font-mono text-[10px] tracking-[0.18em] text-primary uppercase">Record</span>
           <span>
@@ -173,7 +174,7 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
           <span className="text-xs tracking-[0.14em] text-primary uppercase">Open the poster</span>
         </a>
 
-        <div className="rise flex min-h-56 flex-col justify-between bg-card px-5 py-5" style={{ animationDelay: "0.44s" }}>
+        <div className="beat flex min-h-56 flex-col justify-between bg-card px-5 py-5" style={{ animationDelay: "1.55s" }}>
           <span className="font-mono text-[10px] tracking-[0.18em] text-primary uppercase">Report</span>
           <span>
             <span className="block font-heading text-3xl leading-tight font-light">
