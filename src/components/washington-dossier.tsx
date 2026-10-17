@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import {
   washingtonMupuPhone,
   washingtonSource,
@@ -78,7 +78,7 @@ function beats(record: WashingtonRecord): Beat[] {
   return items.sort((a, b) => a.sort.localeCompare(b.sort))
 }
 
-export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
+export function WashingtonDossier({ record, action }: { record: WashingtonRecord; action?: ReactNode }) {
   const events = beats(record)
   const facts = [record.place ? `Missing out of ${record.place}` : null, record.height, record.weight]
     .filter(Boolean)
@@ -88,48 +88,18 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
     <article id="public-dossier" className="mt-8 border border-primary/35 bg-card/50">
       <header className="rise border-b border-primary/25 px-5 py-6 sm:px-7">
         <p className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">Washington public record</p>
-        <h2 className="mt-3 font-heading text-4xl leading-none font-light tracking-tight sm:text-5xl">{record.name}</h2>
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 className="font-heading text-4xl leading-none font-light tracking-tight sm:text-5xl">{record.name}</h2>
+          {action}
+        </div>
         <p className="mt-3 text-sm text-muted-foreground">
           {record.age} on the poster
           {facts ? ` · ${facts}` : ""}
         </p>
       </header>
 
-      <div className="px-5 py-6 sm:px-7">
-      <ol className="relative space-y-3 pl-8">
-        <span
-          aria-hidden="true"
-          className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent"
-          style={{ animationDuration: "1.5s" }}
-        />
-        {events.map((event, index) => (
-          <li
-            key={event.title}
-            style={{ animationDelay: `${0.4 + index * 0.28}s` }}
-            className="beat relative border border-primary/25 bg-background/40 px-4 py-4"
-          >
-            <span
-              aria-hidden="true"
-              className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background"
-            />
-            <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{event.label}</p>
-            <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
-            {event.body ? <p className="mt-2 text-sm leading-6 text-foreground/85">{event.body}</p> : null}
-            <a
-              href={event.href}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-block text-xs text-muted-foreground underline decoration-primary/40 underline-offset-4 hover:text-primary"
-            >
-              {event.source}
-            </a>
-          </li>
-        ))}
-      </ol>
-      </div>
-
-      <div className="grid gap-px border-t border-primary/25 bg-primary/20 md:grid-cols-3">
-        <figure className="beat flex h-full flex-col bg-card" style={{ animationDelay: "1.25s" }}>
+      <div className="grid gap-px border-b border-primary/25 bg-primary/20 md:grid-cols-3">
+        <figure className="beat flex h-full flex-col bg-card" style={{ animationDelay: "0.08s" }}>
           <div className="relative">
             <svg
               aria-hidden="true"
@@ -162,7 +132,7 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
           target="_blank"
           rel="noreferrer"
           className="beat group flex min-h-56 flex-col justify-between bg-card px-5 py-5"
-          style={{ animationDelay: "1.4s" }}
+          style={{ animationDelay: "0.16s" }}
         >
           <span className="font-mono text-[10px] tracking-[0.18em] text-primary uppercase">Record</span>
           <span>
@@ -174,7 +144,7 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
           <span className="text-xs tracking-[0.14em] text-primary uppercase">Open the poster</span>
         </a>
 
-        <div className="beat flex min-h-56 flex-col justify-between bg-card px-5 py-5" style={{ animationDelay: "1.55s" }}>
+        <div className="beat flex min-h-56 flex-col justify-between bg-card px-5 py-5" style={{ animationDelay: "0.24s" }}>
           <span className="font-mono text-[10px] tracking-[0.18em] text-primary uppercase">Report</span>
           <span>
             <span className="block font-heading text-3xl leading-tight font-light">
@@ -198,6 +168,39 @@ export function WashingtonDossier({ record }: { record: WashingtonRecord }) {
             State listing
           </a>
         </div>
+      </div>
+
+      <div className="px-5 py-6 sm:px-7">
+      <ol className="relative space-y-3 pl-8">
+        <span
+          aria-hidden="true"
+          className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent"
+          style={{ animationDuration: "1.5s" }}
+        />
+        {events.map((event, index) => (
+          <li
+            key={event.title}
+            style={{ animationDelay: `${0.4 + index * 0.28}s` }}
+            className="beat relative border border-primary/25 bg-background/40 px-4 py-4"
+          >
+            <span
+              aria-hidden="true"
+              className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background"
+            />
+            <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{event.label}</p>
+            <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
+            {event.body ? <p className="mt-2 text-sm leading-6 text-foreground/85">{event.body}</p> : null}
+            <a
+              href={event.href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-block text-xs text-muted-foreground underline decoration-primary/40 underline-offset-4 hover:text-primary"
+            >
+              {event.source}
+            </a>
+          </li>
+        ))}
+      </ol>
       </div>
 
       <p className="border-t border-primary/25 px-5 py-4 text-xs leading-5 text-muted-foreground sm:px-7">

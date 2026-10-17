@@ -40,27 +40,23 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
           Archive
         </Link>
       </p>
-      <WashingtonDossier record={record} />
-
-      <section className="mt-10 border border-primary/30 px-5 py-5 sm:px-7">
-        <p className="font-mono text-[11px] tracking-[0.18em] text-primary uppercase">Your repository</p>
-        <h2 className="mt-3 font-heading text-3xl font-light">Clone the case</h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-          A clone starts private. Notes, sources, and media stay in your repository until you choose to share them.
-        </p>
-        {mine ? (
-          <Button render={<Link href={`/repository/${mine.id}`} />} className="mt-5 h-11 px-5" nativeButton={false}>
-            Open your repository
-          </Button>
-        ) : (
-          <form action={cloneRecord} className="mt-5">
-            <input type="hidden" name="caseId" value={record.id} />
-            <Button type="submit" className="h-11 px-5">
-              Clone into your repository
+      <WashingtonDossier
+        record={record}
+        action={
+          mine ? (
+            <Button render={<Link href={`/repository/${mine.id}`} />} className="h-11 px-5" nativeButton={false}>
+              Your repository
             </Button>
-          </form>
-        )}
-      </section>
+          ) : (
+            <form action={cloneRecord}>
+              <input type="hidden" name="caseId" value={record.id} />
+              <Button type="submit" className="h-11 px-5">
+                Clone the case
+              </Button>
+            </form>
+          )
+        }
+      />
 
       <section className="mt-10">
         <h2 className="font-heading text-3xl font-light">Public repositories</h2>
