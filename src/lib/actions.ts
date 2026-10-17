@@ -13,6 +13,7 @@ import {
   newId,
   updateStore,
 } from "@/lib/store"
+import { washingtonById } from "@/lib/washington-public"
 import type { ActionState, ConnectionType, Milestone, MilestoneKind } from "@/lib/types"
 
 const KINDS: MilestoneKind[] = ["sourced", "lead", "inconclusive"]
@@ -31,7 +32,11 @@ function refresh(roomId: string, caseId?: string) {
   revalidatePath("/archive")
   revalidatePath("/rooms")
   revalidatePath(`/room/${roomId}`)
-  if (caseId) revalidatePath(`/cases/${caseId}`)
+  revalidatePath(`/repository/${roomId}`)
+  if (caseId) {
+    revalidatePath(`/cases/${caseId}`)
+    revalidatePath(`/records/${caseId}`)
+  }
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -46,17 +51,24 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 }
 
 export async function signup(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const name = text(formData, "name", 80)
+  const name = text(formData, "name", 20)
   const email = text(formData, "email", 120).toLowerCase()
   const password = String(formData.get("password") ?? "")
-  if (name.length < 2) return { error: "Give the desk a name." }
+  if (!/^[A-Za-z0-9_-]{3,20}$/.test(name)) {
+    return { error: "Use 3 to 20 letters, numbers, or hyphens. Leave your real name off this desk." }
+  }
   if (!email.includes("@")) return { error: "Use an email address." }
   if (password.length < 8) return { error: "Use at least 8 characters." }
   const existing = await findUserByEmail(email)
-  if (existing) return { error: "That email already has a desk." }
+  if (existing) return { error: "That email already has a desk. Sign in instead." }
 
   const id = newId("user")
+  let taken = false
   await updateStore((store) => {
+    if (store.users.some((user) => user.name.toLowerCase() === name.toLowerCase())) {
+      taken = true
+      return
+    }
     store.users.push({
       id,
       name,
@@ -65,8 +77,9 @@ export async function signup(_prev: ActionState, formData: FormData): Promise<Ac
       createdAt: new Date().toISOString(),
     })
   })
+  if (taken) return { error: "That username is already taken." }
   await setSession(id)
-  redirect("/archive")
+  redirect(safeNext(formData.get("next")))
 }
 
 export async function logout() {
@@ -97,6 +110,7 @@ export async function cloneCase(formData: FormData) {
       createdAt: new Date().toISOString(),
       milestones: [],
       brief: null,
+      note: "",
     })
   })
   revalidatePath("/rooms")
@@ -365,4 +379,194 @@ export async function confirmConnection(_prev: ActionState, formData: FormData):
 
 export async function confirmConnectionForm(formData: FormData) {
   await confirmLink(formData)
+}
+
+export async function cloneRecord(formData: FormData) {
+  const user = await getCurrentUser()
+  const caseId = text(formData, "caseId", 64)
+  if (!user) redirect(`/join?next=/records/${caseId}`)
+  if (!washingtonById(caseId)) return
+
+  let roomId = ""
+  await updateStore((store) => {
+    const existing = store.clones.find((clone) => clone.caseId === caseId && clone.ownerId === user.id)
+    if (existing) {
+      roomId = existing.id
+      return
+    }
+    roomId = newId("room")
+    store.clones.push({
+      id: roomId,
+      caseId,
+      ownerId: user.id,
+      visibility: "private",
+      createdAt: new Date().toISOString(),
+      milestones: [],
+      brief: null,
+      note: "",
+    })
+  })
+  refresh(roomId, caseId)
+  redirect(`/repository/${roomId}`)
+}
+
+function readEvidence(formData: FormData) {
+  const date = text(formData, "date", 10)
+  const title = text(formData, "title", 140)
+  const body = text(formData, "body", 800)
+  const kind = text(formData, "kind", 20) as MilestoneKind
+  const sourceLabel = text(formData, "sourceLabel", 180)
+  const sourceUrl = cleanUrl(text(formData, "sourceUrl", 400))
+  const rawImage = text(formData, "imageUrl", 400)
+  const imageUrl = isHttpUrl(rawImage) ? rawImage : ""
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Choose a date." }
+  if (title.length < 3) return { error: "Give the note a title." }
+  if (!KINDS.includes(kind)) return { error: "Mark it sourced, a lead, or inconclusive." }
+  if (kind === "sourced" && !sourceLabel) return { error: "A sourced note needs the name of its source." }
+  if (rawImage && !imageUrl) return { error: "Media links need to start with http or https." }
+  return { date, title, body, kind, sourceLabel, sourceUrl, imageUrl }
+}
+
+async function ownedRoom(roomId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in to change this repository." as const, user: null, room: null }
+  const room = await getRoom(roomId, user.id)
+  if (!room || room.clone.ownerId !== user.id) {
+    return { error: "Only the owner can change this repository." as const, user: null, room: null }
+  }
+  return { error: "", user, room }
+}
+
+export async function addEvidence(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.user || !owned.room) return { error: owned.error }
+  const fields = readEvidence(formData)
+  if ("error" in fields) return { error: fields.error }
+
+  const milestone: Milestone = {
+    id: newId("ms"),
+    date: fields.date,
+    title: fields.title,
+    body: fields.body,
+    kind: fields.kind,
+    sourceLabel: fields.sourceLabel,
+    sourceUrl: fields.sourceUrl,
+    imageUrl: fields.imageUrl,
+    authorId: owned.user.id,
+    createdAt: new Date().toISOString(),
+    origin: "room",
+  }
+  await updateStore((store) => {
+    const clone = store.clones.find((item) => item.id === roomId)
+    if (!clone) return
+    clone.milestones.push(milestone)
+    clone.brief = null
+  })
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function updateEvidence(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const milestoneId = text(formData, "milestoneId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return { error: owned.error }
+  const fields = readEvidence(formData)
+  if ("error" in fields) return { error: fields.error }
+
+  await updateStore((store) => {
+    const clone = store.clones.find((item) => item.id === roomId)
+    const milestone = clone?.milestones.find((item) => item.id === milestoneId && item.origin === "room")
+    if (!milestone) return
+    milestone.date = fields.date
+    milestone.title = fields.title
+    milestone.body = fields.body
+    milestone.kind = fields.kind
+    milestone.sourceLabel = fields.sourceLabel
+    milestone.sourceUrl = fields.sourceUrl
+    milestone.imageUrl = fields.imageUrl
+    if (clone) clone.brief = null
+  })
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function deleteEvidence(formData: FormData) {
+  const roomId = text(formData, "roomId", 40)
+  const milestoneId = text(formData, "milestoneId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return
+  await updateStore((store) => {
+    const clone = store.clones.find((item) => item.id === roomId)
+    if (!clone) return
+    clone.milestones = clone.milestones.filter((item) => item.id !== milestoneId)
+    clone.brief = null
+    for (const message of store.messages) {
+      if (message.cloneId === roomId && message.pinnedMilestoneId === milestoneId) {
+        message.pinnedMilestoneId = null
+      }
+    }
+  })
+  refresh(roomId, owned.room.caseFile.id)
+}
+
+export async function saveRepository(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const note = text(formData, "note", 2000)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return { error: owned.error }
+  await updateStore((store) => {
+    const clone = store.clones.find((item) => item.id === roomId)
+    if (clone) clone.note = note
+  })
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function deleteRepository(formData: FormData) {
+  const roomId = text(formData, "roomId", 40)
+  if (formData.get("confirm") !== "yes") return
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return
+  const caseId = owned.room.caseFile.id
+  await updateStore((store) => {
+    store.clones = store.clones.filter((item) => item.id !== roomId)
+    store.messages = store.messages.filter((item) => item.cloneId !== roomId)
+  })
+  refresh(roomId, caseId)
+  redirect("/rooms")
+}
+
+export async function postThread(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in to join the thread." }
+  const caseId = text(formData, "caseId", 64)
+  const body = text(formData, "body", 500)
+  if (!washingtonById(caseId)) return { error: "That poster is not in the archive." }
+  if (body.length < 2) return { error: "Write a comment first." }
+  await updateStore((store) => {
+    store.threads.push({
+      id: newId("thread"),
+      caseId,
+      authorId: user.id,
+      body,
+      createdAt: new Date().toISOString(),
+    })
+  })
+  revalidatePath(`/records/${caseId}`)
+  return { ok: true }
+}
+
+export async function deleteThread(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return
+  const caseId = text(formData, "caseId", 64)
+  const postId = text(formData, "postId", 40)
+  await updateStore((store) => {
+    store.threads = store.threads.filter(
+      (post) => !(post.id === postId && post.caseId === caseId && post.authorId === user.id),
+    )
+  })
+  revalidatePath(`/records/${caseId}`)
 }

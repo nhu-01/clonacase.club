@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "fs/promises"
 import path from "path"
 import { loadRemoteDesk, saveRemoteDesk } from "@/lib/remote-desk"
 import { CASES, DEMO_ACCOUNTS, SEEDED_CONNECTION } from "@/lib/seed"
+import { washingtonById, type WashingtonRecord } from "@/lib/washington-public"
 import { hashPassword } from "@/lib/session"
 import type {
   CaseFile,
@@ -40,7 +41,7 @@ function publicUser(user: User): PublicUser {
 }
 
 function blankStore(): Store {
-  return { version: VERSION, users: [], clones: [], connections: [], messages: [] }
+  return { version: VERSION, users: [], clones: [], connections: [], messages: [], threads: [] }
 }
 
 function seedStore(store: Store) {
@@ -60,6 +61,16 @@ function seedStore(store: Store) {
   if (!store.messages) {
     store.messages = []
     changed = true
+  }
+  if (!store.threads) {
+    store.threads = []
+    changed = true
+  }
+  for (const clone of store.clones) {
+    if (typeof clone.note !== "string") {
+      clone.note = ""
+      changed = true
+    }
   }
   if (store.version !== VERSION) {
     store.version = VERSION
@@ -157,8 +168,31 @@ export function updateStore<T>(mutate: (store: Store) => T) {
   })
 }
 
+function washingtonAsCase(record: WashingtonRecord): CaseFile {
+  const place = record.place ?? "Washington"
+  return {
+    id: record.id,
+    index: "WA",
+    name: record.name,
+    age: record.age,
+    lastSeen: record.lastSeenIso ?? `${record.published}-01`,
+    city: place,
+    region: "Washington",
+    agency: record.agency ?? "Washington State Patrol",
+    agencyPhone: record.phone ?? "",
+    summary: record.summary,
+    circumstances: record.summary,
+    anchor: { x: 0, y: 0 },
+    places: [],
+    timeline: [],
+  }
+}
+
 export function caseById(id: string) {
-  return CASES.find((item) => item.id === id) ?? null
+  const fictional = CASES.find((item) => item.id === id)
+  if (fictional) return fictional
+  const record = washingtonById(id)
+  return record ? washingtonAsCase(record) : null
 }
 
 export function allCases(): CaseFile[] {
@@ -253,6 +287,7 @@ export async function getRoom(roomId: string, viewerId: string): Promise<RoomVie
       createdAt: clone.createdAt,
       ownerId: clone.ownerId,
       ownerName: authorName(store, clone.ownerId),
+      note: clone.note ?? "",
     },
     locked,
     caseFile: file,
@@ -277,6 +312,33 @@ export async function getRoom(roomId: string, viewerId: string): Promise<RoomVie
     canEdit,
     brief: locked ? null : clone.brief,
   }
+}
+
+export async function publicRepositories(caseId: string) {
+  const store = await readStore()
+  return store.clones
+    .filter((clone) => clone.caseId === caseId && clone.visibility === "public")
+    .map((clone) => ({
+      id: clone.id,
+      ownerName: authorName(store, clone.ownerId),
+      note: clone.note ?? "",
+      count: clone.milestones.length,
+      createdAt: clone.createdAt,
+    }))
+}
+
+export async function caseThreads(caseId: string) {
+  const store = await readStore()
+  return store.threads
+    .filter((post) => post.caseId === caseId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((post) => ({
+      id: post.id,
+      body: post.body,
+      createdAt: post.createdAt,
+      authorId: post.authorId,
+      authorName: authorName(store, post.authorId),
+    }))
 }
 
 export function newId(prefix: string) {

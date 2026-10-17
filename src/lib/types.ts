@@ -101,6 +101,15 @@ export type Clone = {
   createdAt: string
   milestones: Milestone[]
   brief: Brief | null
+  note: string
+}
+
+export type ThreadPost = {
+  id: string
+  caseId: string
+  authorId: string
+  body: string
+  createdAt: string
 }
 
 export type Store = {
@@ -109,6 +118,7 @@ export type Store = {
   clones: Clone[]
   connections: Connection[]
   messages: Message[]
+  threads: ThreadPost[]
 }
 
 export type ActionState = {
@@ -142,6 +152,7 @@ export type RoomView = {
     createdAt: string
     ownerId: string
     ownerName: string
+    note: string
   }
   locked: boolean
   caseFile: CaseFile

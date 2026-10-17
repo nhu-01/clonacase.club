@@ -82,9 +82,11 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
             Open your own desk
           </summary>
           <form action={create} className="mt-4 grid gap-4">
+            <input type="hidden" name="next" value={nextPath} />
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" className="h-10" required />
+              <Label htmlFor="name">Anonymous username</Label>
+              <Input id="name" name="name" className="h-10" required minLength={3} maxLength={20} />
+              <p className="text-xs leading-5 text-muted-foreground">Do not use your real name.</p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="new-email">Email</Label>

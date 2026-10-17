@@ -16,9 +16,9 @@ export default async function RoomsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-14">
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">{user.name}</p>
-      <h1 className="mt-4 font-heading text-5xl font-light tracking-tight sm:text-6xl">Rooms</h1>
+      <h1 className="mt-4 font-heading text-5xl font-light tracking-tight sm:text-6xl">Repository</h1>
       <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-        A room is your clone of a public file. Private until you share it.
+        Each clone starts private. Notes, sources, and media stay here until you share that repository.
       </p>
       <section className="mt-12">
         <h2 className="font-heading text-3xl font-light">Yours</h2>
@@ -35,7 +35,7 @@ export default async function RoomsPage() {
             {mine.map((room, index) => (
               <Rise key={room.id} delay={index * 0.04}>
                 <li>
-                  <Link href={`/room/${room.id}`} className="flex items-end justify-between gap-4 py-5">
+                  <Link href={`/repository/${room.id}`} className="flex items-end justify-between gap-4 py-5">
                     <span>
                       <span className="block font-heading text-3xl font-light">{room.caseName}</span>
                       <span className="mt-1 block text-sm text-muted-foreground">
@@ -60,7 +60,7 @@ export default async function RoomsPage() {
           <ul className="mt-4 divide-y divide-border/80 border-y border-border/80">
             {shared.map((room) => (
               <li key={room.id}>
-                <Link href={`/room/${room.id}`} className="flex items-end justify-between gap-4 py-5">
+                <Link href={`/repository/${room.id}`} className="flex items-end justify-between gap-4 py-5">
                   <span>
                     <span className="block font-heading text-3xl font-light">{room.caseName}</span>
                     <span className="mt-1 block text-sm text-muted-foreground">

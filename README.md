@@ -1,6 +1,6 @@
 # clonacase
 
-A dark, quiet desk for a public case file. Volunteers sign in, open a demonstration file, and clone it into a private room. The room is a timeline. Each milestone is sourced, a lead, or inconclusive. Two files can be linked only as a sourced claim, and a second volunteer has to confirm it. A draft brief cites the timeline and does not go looking.
+A dark desk for a public missing-person poster. Search a name, choose an anonymous username, and open that person’s timeline. Clone the case into a private repository, then keep notes, sources, and media there. A draft reads only what you saved.
 
 The landing search reads adult public posters from the [Washington State Patrol missing-persons page](https://wsp.wa.gov/crime/alerts-missing-persons/missing-persons/). Choosing a name opens that person’s timeline, photograph, and poster. Photographs and PDFs stay on the state site. Anyone under 18 is left out. clonacase does not scrape accounts, search the web for a suspect, or keep an offender list.
 

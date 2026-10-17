@@ -87,13 +87,13 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
     >
       <Flashlight />
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Public record</p>
-      <h1 className="rise mt-5 font-heading text-[clamp(3.2rem,8vw,6rem)] leading-[0.9] font-light tracking-[-0.035em]">
-        A quiet room
-        <span className="block italic text-primary">for a public case.</span>
+      <h1 className="rise mt-5 font-heading text-[clamp(2.7rem,7vw,5.4rem)] leading-[0.95] font-light tracking-[-0.035em]">
+        Clone the Case,
+        <span className="block italic text-primary">Find the Trace</span>
       </h1>
       <p className="rise mt-6 max-w-xl text-sm leading-6 text-muted-foreground" style={{ animationDelay: "0.08s" }}>
-        Search a name, an age, or a place. These are adult public posters from the Washington State Patrol.
-        Choosing a person opens their timeline.
+        Search a name, an age, or a place. The first time you open a person, choose an anonymous username.
+        The timeline is the next page. A clone of the case starts private.
       </p>
       <form className="rise mt-10" style={{ animationDelay: "0.14s" }} onSubmit={onSubmit}>
         <label htmlFor="archive-search" className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
@@ -155,7 +155,7 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
           className="h-11 border-primary/40 px-5"
           nativeButton={false}
         >
-          {signedIn ? "Your rooms" : "Sign in"}
+          {signedIn ? "Your repository" : "Sign in"}
         </Button>
       </div>
     </div>
