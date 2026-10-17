@@ -196,32 +196,80 @@ body {
 }
 
 html[data-landing] {
-  --background: oklch(0.1 0.006 20);
-  --foreground: oklch(0.95 0.01 70);
-  --card: oklch(0.15 0.01 22);
-  --card-foreground: oklch(0.95 0.01 70);
-  --primary: oklch(0.74 0.085 22);
-  --primary-foreground: oklch(0.16 0.02 20);
-  --muted-foreground: oklch(0.72 0.018 40);
-  --border: oklch(0.78 0.04 22 / 18%);
-  --input: oklch(0.78 0.04 22 / 16%);
-  --ring: oklch(0.7 0.08 22);
+  --background: oklch(0.09 0.012 18);
+  --foreground: oklch(0.95 0.012 70);
+  --card: oklch(0.15 0.022 18);
+  --card-foreground: oklch(0.95 0.012 70);
+  --primary: oklch(0.5 0.14 24);
+  --primary-foreground: oklch(0.97 0.015 80);
+  --muted-foreground: oklch(0.74 0.02 30);
+  --border: oklch(0.58 0.1 20 / 32%);
+  --input: oklch(0.58 0.1 20 / 24%);
+  --ring: oklch(0.52 0.14 20);
 }
 
 html[data-landing] body {
-  background-color: oklch(0.1 0.006 20);
+  background-color: oklch(0.09 0.012 18);
   background-image: none;
 }
 
 html[data-landing] ::selection {
-  background: oklch(0.62 0.08 22 / 0.35);
+  background: oklch(0.48 0.14 20 / 0.55);
   color: oklch(0.98 0.01 80);
+}
+
+@keyframes spine-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.spine-x {
+  transform-origin: left;
+  animation: spine-x 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-landing] .poster-frame rect {
+  stroke-dashoffset: 100;
+  animation: draw-frame 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes draw-frame {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dot-pulse {
+  animation: maroon-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes maroon-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    box-shadow: 0 0 0 0 oklch(0.58 0.16 22 / 0.45);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 6px oklch(0.58 0.16 22 / 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ember,
   .rise,
-  .spine {
+  .spine,
+  .spine-x,
+  .dot-pulse,
+  html[data-landing] .poster-frame rect {
     animation: none;
+  }
+
+  html[data-landing] .poster-frame rect {
+    stroke-dashoffset: 0;
   }
 }
