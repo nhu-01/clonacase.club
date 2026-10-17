@@ -22,8 +22,8 @@ const mono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://clonacase.club"),
   title: {
-    default: "Clonacase",
-    template: "%s · Clonacase",
+    default: "clonacase",
+    template: "%s · clonacase",
   },
   description: "A private room for a public case. Sourced timelines for demonstration files.",
 }

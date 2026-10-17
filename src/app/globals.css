@@ -195,6 +195,29 @@ body {
   animation: spine 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+html[data-landing] {
+  --background: oklch(0.1 0.006 20);
+  --foreground: oklch(0.95 0.01 70);
+  --card: oklch(0.15 0.01 22);
+  --card-foreground: oklch(0.95 0.01 70);
+  --primary: oklch(0.74 0.085 22);
+  --primary-foreground: oklch(0.16 0.02 20);
+  --muted-foreground: oklch(0.72 0.018 40);
+  --border: oklch(0.78 0.04 22 / 18%);
+  --input: oklch(0.78 0.04 22 / 16%);
+  --ring: oklch(0.7 0.08 22);
+}
+
+html[data-landing] body {
+  background-color: oklch(0.1 0.006 20);
+  background-image: none;
+}
+
+html[data-landing] ::selection {
+  background: oklch(0.62 0.08 22 / 0.35);
+  color: oklch(0.98 0.01 80);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ember,
   .rise,

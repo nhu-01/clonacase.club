@@ -1,8 +1,8 @@
-# Clonacase
+# clonacase
 
 A dark, quiet desk for a public case file. Volunteers sign in, open a demonstration file, and clone it into a private room. The room is a timeline. Each milestone is sourced, a lead, or inconclusive. Two files can be linked only as a sourced claim, and a second volunteer has to confirm it. A draft brief cites the timeline and does not go looking.
 
-The three people in the archive are fictional. Clonacase does not scrape, search the web, or keep an offender list.
+The three people in the archive are fictional. clonacase does not scrape, search the web, or keep an offender list.
 
 The public address is [clonacase.club](https://clonacase.club). DNS for that name is managed at Porkbun.
 
