@@ -20,6 +20,10 @@ function smooth(value: number) {
   return t * t * (3 - 2 * t)
 }
 
+function canvasFont(font: string, dpr: number) {
+  return font.replace(/(\d*\.?\d+)px/g, (_, size) => `${Number.parseFloat(size) * dpr}px`)
+}
+
 export function PixelSlogan() {
   const root = useRef<HTMLHeadingElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -80,11 +84,14 @@ export function PixelSlogan() {
       lines.forEach((line, index) => {
         const style = getComputedStyle(line)
         const ink = inks[index]
-        ctx.font = style.font
+        const text = line.textContent || ""
+        ctx.font = canvasFont(style.font, dpr)
         ctx.fillStyle = style.color
-        if (style.letterSpacing && style.letterSpacing !== "normal") ctx.letterSpacing = style.letterSpacing
-        ctx.textBaseline = "top"
-        ctx.fillText(line.textContent || "", (ink.left - originX) * dpr, (ink.top - originY) * dpr)
+        const spacing = Number.parseFloat(style.letterSpacing)
+        if (!Number.isNaN(spacing)) ctx.letterSpacing = `${spacing * dpr}px`
+        ctx.textBaseline = "alphabetic"
+        const metrics = ctx.measureText(text)
+        ctx.fillText(text, (ink.left - originX) * dpr, (ink.top - originY) * dpr + metrics.fontBoundingBoxAscent)
       })
 
       const data = ctx.getImageData(0, 0, width, height).data
@@ -145,20 +152,9 @@ export function PixelSlogan() {
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
         const appear = smooth(Math.min(1, t / 0.1))
         for (const pixel of pixels) {
-          const jx = Math.round(
-            (Math.sin(elapsed * 0.021 + pixel.phase) * 0.65 +
-              Math.sin(elapsed * 0.047 + pixel.phase * 2.2) * 0.35) *
-              pixel.size *
-              0.72 *
-              energy,
-          )
-          const jy = Math.round(
-            (Math.cos(elapsed * 0.018 + pixel.phase * 1.4) * 0.65 +
-              Math.sin(elapsed * 0.041 + pixel.phase) * 0.35) *
-              pixel.size *
-              0.5 *
-              energy,
-          )
+          const hop = Math.floor(elapsed / 68)
+          const jx = Math.round(Math.sin(hop * 1.7 + pixel.phase) * pixel.size * 1.05 * energy)
+          const jy = Math.round(Math.cos(hop * 1.3 + pixel.phase * 2) * pixel.size * 0.8 * energy)
           ctx.globalAlpha = appear
           ctx.fillStyle = pixel.color
           ctx.fillRect(pixel.x + jx, pixel.y + jy, pixel.size, pixel.size)
