@@ -6,15 +6,32 @@ import type { PublicUser } from "@/lib/types"
 function Mark() {
   return (
     <svg viewBox="0 0 34 22" className="mark h-5 w-[34px] overflow-visible" aria-hidden="true">
+      <defs>
+        <filter id="mark-fade" x="-30%" y="-50%" width="160%" height="200%">
+          <feGaussianBlur stdDeviation="0.65" />
+        </filter>
+      </defs>
       <path
         d="M 3 11 C 3 5 11.2 5 17 11 C 22.8 17 31 17 31 11 C 31 5 22.8 5 17 11 C 11.2 17 3 17 3 11"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.15"
+        strokeWidth="2.6"
         strokeLinecap="round"
+        opacity="0.28"
+        filter="url(#mark-fade)"
       />
-      <circle className="mark-flow" r="1.65" fill="oklch(0.94 0.025 70)" />
-      <circle className="mark-echo" r="1.25" fill="oklch(0.74 0.12 24)" />
+      <path
+        d="M 3 11 C 3 5 11.2 5 17 11 C 22.8 17 31 17 31 11 C 31 5 22.8 5 17 11 C 11.2 17 3 17 3 11"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <circle className="mark-flow-fade" r="2.15" fill="oklch(0.9 0.03 60)" opacity="0.22" />
+      <circle className="mark-echo-fade" r="1.7" fill="oklch(0.72 0.1 24)" opacity="0.2" />
+      <circle className="mark-flow" r="1.45" fill="oklch(0.94 0.025 70)" opacity="0.82" />
+      <circle className="mark-echo" r="1.15" fill="oklch(0.78 0.08 30)" opacity="0.7" />
     </svg>
   )
 }
