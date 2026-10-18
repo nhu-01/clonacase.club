@@ -181,6 +181,23 @@ body {
   animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.slogan-hold {
+  opacity: 0;
+}
+
+.slogan-in {
+  animation: slogan-in 0.45s ease both;
+}
+
+@keyframes slogan-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes spine {
   from {
     transform: scaleY(0);
@@ -558,6 +575,7 @@ html.clone-opening body > :not(.clone-veil) {
   .reply-in,
   .mark-flow,
   .mark-echo,
+  .slogan-in,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
@@ -582,5 +600,14 @@ html.clone-opening body > :not(.clone-veil) {
 
   .mark-echo {
     offset-distance: 62%;
+  }
+
+  .slogan-hold,
+  .slogan-in {
+    opacity: 1;
+  }
+
+  .slogan-canvas {
+    display: none;
   }
 }

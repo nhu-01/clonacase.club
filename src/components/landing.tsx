@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
+import { PixelSlogan } from "@/components/pixel-slogan"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { washingtonRecords, type WashingtonRecord } from "@/lib/washington-public"
@@ -87,12 +88,8 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
     >
       <Flashlight />
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Public record</p>
-      <h1 className="rise mt-5 font-heading text-[clamp(2.7rem,7vw,5.4rem)] leading-[0.95] font-light tracking-[-0.035em]">
-        Clone the Case,
-        <span className="block italic text-primary">Find the Trace</span>
-      </h1>
+      <PixelSlogan />
       <p className="rise mt-6 max-w-xl text-sm leading-6 text-muted-foreground" style={{ animationDelay: "0.08s" }}>
-        Search a name, an age, or a place. The first time you open a person, choose an anonymous username.
         The timeline is the next page. A clone of the case starts private.
       </p>
       <form className="rise mt-10" style={{ animationDelay: "0.14s" }} onSubmit={onSubmit}>
