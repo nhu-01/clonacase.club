@@ -6,14 +6,16 @@ import { composeBrief } from "@/lib/brief"
 import { getCurrentUser } from "@/lib/current"
 import { isHttpUrl, isInternalPath, safeNext } from "@/lib/format"
 import { clearSession, demoIdentity, setSession } from "@/lib/session"
+import { posterBeats } from "@/lib/poster-beats"
 import {
   caseById,
   getRoom,
+  lastWriteDurable,
   newId,
   updateStore,
 } from "@/lib/store"
 import { washingtonById } from "@/lib/washington-public"
-import type { ActionState, ConnectionType, Milestone, MilestoneKind } from "@/lib/types"
+import type { ActionState, ConnectionType, HypotheticalEvent, MediaKind, Milestone, MilestoneKind, RepoMedia } from "@/lib/types"
 
 const KINDS: MilestoneKind[] = ["sourced", "lead", "inconclusive"]
 const LINK_TYPES: ConnectionType[] = [
@@ -85,6 +87,8 @@ export async function cloneCase(formData: FormData) {
       visibility: "private",
       createdAt: new Date().toISOString(),
       milestones: [],
+      media: [],
+      hypothetical: [],
       brief: null,
       note: "",
     })
@@ -357,11 +361,13 @@ export async function confirmConnectionForm(formData: FormData) {
   await confirmLink(formData)
 }
 
-export async function cloneRecord(formData: FormData) {
+export async function cloneRecord(formData: FormData): Promise<{ roomId?: string; error?: string }> {
   const user = await getCurrentUser()
   const caseId = text(formData, "caseId", 64)
-  if (!user) redirect(`/join?next=/records/${caseId}`)
-  if (!washingtonById(caseId)) return
+  if (!user) {
+    redirect(`/join?next=/records/${caseId}`)
+  }
+  if (!washingtonById(caseId)) return { error: "That poster is not in the archive." }
 
   let roomId = ""
   await updateStore((store) => {
@@ -378,12 +384,17 @@ export async function cloneRecord(formData: FormData) {
       visibility: "private",
       createdAt: new Date().toISOString(),
       milestones: [],
+      media: [],
+      hypothetical: [],
       brief: null,
       note: "",
     })
   })
+  if (!roomId || !lastWriteDurable()) {
+    return { error: "The repository did not save. The database refused the connection." }
+  }
   refresh(roomId, caseId)
-  redirect(`/repository/${roomId}`)
+  return { roomId }
 }
 
 function readEvidence(formData: FormData) {
@@ -439,6 +450,7 @@ export async function addEvidence(_prev: ActionState, formData: FormData): Promi
     clone.milestones.push(milestone)
     clone.brief = null
   })
+  if (!lastWriteDurable()) return { error: "The note did not save." }
   refresh(roomId, owned.room.caseFile.id)
   return { ok: true }
 }
@@ -532,6 +544,106 @@ export async function postThread(_prev: ActionState, formData: FormData): Promis
   })
   revalidatePath(`/records/${caseId}`)
   return { ok: true }
+}
+
+const MEDIA: MediaKind[] = ["article", "photo", "video", "pdf"]
+
+export async function addMedia(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.user || !owned.room) return { error: owned.error }
+  const kind = text(formData, "kind", 20) as MediaKind
+  const title = text(formData, "title", 140)
+  const url = cleanUrl(text(formData, "url", 400))
+  const note = text(formData, "note", 500)
+  if (!MEDIA.includes(kind)) return { error: "Choose an article, photo, video, or PDF." }
+  if (title.length < 2) return { error: "Give the media a title." }
+  if (!url) return { error: "Paste a link that starts with http or https." }
+  const item: RepoMedia = {
+    id: newId("media"),
+    kind,
+    title,
+    url,
+    note,
+    createdAt: new Date().toISOString(),
+  }
+  await updateStore((store) => {
+    const clone = store.clones.find((entry) => entry.id === roomId)
+    if (!clone) return
+    if (!clone.media) clone.media = []
+    clone.media.push(item)
+  })
+  if (!lastWriteDurable()) return { error: "The media did not save." }
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function deleteMedia(formData: FormData) {
+  const roomId = text(formData, "roomId", 40)
+  const mediaId = text(formData, "mediaId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return
+  await updateStore((store) => {
+    const clone = store.clones.find((entry) => entry.id === roomId)
+    if (!clone?.media) return
+    clone.media = clone.media.filter((item) => item.id !== mediaId)
+  })
+  refresh(roomId, owned.room.caseFile.id)
+}
+
+export async function addHypothetical(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return { error: owned.error }
+  const date = text(formData, "date", 10)
+  const title = text(formData, "title", 140)
+  const body = text(formData, "body", 800)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Choose a date." }
+  if (title.length < 3) return { error: "Give the event a title." }
+  const event: HypotheticalEvent = { id: newId("hy"), date, title, body, basedOn: "" }
+  await updateStore((store) => {
+    const clone = store.clones.find((entry) => entry.id === roomId)
+    if (!clone) return
+    if (!clone.hypothetical) clone.hypothetical = []
+    clone.hypothetical.push(event)
+  })
+  if (!lastWriteDurable()) return { error: "The hypothetical event did not save." }
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function seedHypothetical(formData: FormData) {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return
+  const record = washingtonById(owned.room.caseFile.id)
+  if (!record) return
+  const beats = posterBeats(record).filter((beat) => beat.kind !== "state_listing" && /^\d{4}-\d{2}-\d{2}$/.test(beat.sort))
+  await updateStore((store) => {
+    const clone = store.clones.find((entry) => entry.id === roomId)
+    if (!clone || (clone.hypothetical ?? []).length > 0) return
+    clone.hypothetical = beats.map((beat) => ({
+      id: newId("hy"),
+      date: beat.sort,
+      title: beat.title,
+      body: beat.body,
+      basedOn: beat.title,
+    }))
+  })
+  refresh(roomId, owned.room.caseFile.id)
+}
+
+export async function deleteHypothetical(formData: FormData) {
+  const roomId = text(formData, "roomId", 40)
+  const eventId = text(formData, "eventId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return
+  await updateStore((store) => {
+    const clone = store.clones.find((entry) => entry.id === roomId)
+    if (!clone?.hypothetical) return
+    clone.hypothetical = clone.hypothetical.filter((event) => event.id !== eventId)
+  })
+  refresh(roomId, owned.room.caseFile.id)
 }
 
 export async function deleteThread(formData: FormData) {

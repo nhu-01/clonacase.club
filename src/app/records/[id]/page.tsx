@@ -2,9 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { CaseDiscussion } from "@/components/case-discussion"
+import { CloneCaseButton } from "@/components/clone-case"
 import { WashingtonDossier } from "@/components/washington-dossier"
-import { cloneRecord } from "@/lib/actions"
-import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/current"
 import { caseThreads, publicRepositories, roomForUserCase } from "@/lib/store"
 import { posterTimeline } from "@/lib/mongo"
@@ -54,20 +53,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         record={record}
         events={fromMongo ? events ?? undefined : undefined}
         fromMongo={fromMongo}
-        action={
-          mine ? (
-            <Button render={<Link href={`/repository/${mine.id}`} />} className="h-11 px-5" nativeButton={false}>
-              Your repository
-            </Button>
-          ) : (
-            <form action={cloneRecord}>
-              <input type="hidden" name="caseId" value={record.id} />
-              <Button type="submit" className="h-11 px-5">
-                Clone the case
-              </Button>
-            </form>
-          )
-        }
+        action={<CloneCaseButton caseId={record.id} existingId={mine?.id} />}
       />
 
       <section className="mt-10">
@@ -81,7 +67,8 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
                 <Link href={`/repository/${repo.id}`} className="block py-4">
                   <span className="font-heading text-2xl font-light">{repo.ownerName}</span>
                   <span className="mt-1 block text-sm text-muted-foreground">
-                    {repo.count} notes{repo.note ? ` · ${repo.note}` : ""}
+                    {repo.count} saved {repo.count === 1 ? "item" : "items"}
+                    {repo.note ? ` · ${repo.note}` : ""}
                   </span>
                 </Link>
               </li>

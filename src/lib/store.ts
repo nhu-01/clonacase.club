@@ -21,6 +21,7 @@ const VERSION = 1
 type MemoryGlobal = typeof globalThis & {
   __hearthStore?: Store
   __hearthMemory?: boolean
+  __hearthDurable?: boolean
 }
 
 const memory = globalThis as MemoryGlobal
@@ -71,6 +72,18 @@ function seedStore(store: Store) {
       clone.note = ""
       changed = true
     }
+    if (!clone.media) {
+      clone.media = []
+      changed = true
+    }
+    if (!clone.hypothetical) {
+      clone.hypothetical = []
+      changed = true
+    }
+    if (!clone.milestones) {
+      clone.milestones = []
+      changed = true
+    }
   }
   if (store.version !== VERSION) {
     store.version = VERSION
@@ -105,11 +118,16 @@ function hosted() {
   return process.env.VERCEL === "1"
 }
 
+export function lastWriteDurable() {
+  return memory.__hearthDurable !== false
+}
+
 async function writeStore(store: Store) {
   if (usingMongo()) {
     try {
       await saveDesk(store)
       memory.__hearthStore = store
+      memory.__hearthDurable = true
       return
     } catch (error) {
       console.error("MongoDB did not save the desk.", error)
@@ -119,27 +137,32 @@ async function writeStore(store: Store) {
     try {
       await saveRemoteDesk(store)
       memory.__hearthStore = store
+      memory.__hearthDurable = true
       return
     } catch (error) {
       console.error("The shared desk did not save.", error)
       memory.__hearthStore = store
       memory.__hearthMemory = true
+      memory.__hearthDurable = false
       return
     }
   }
   if (memory.__hearthMemory) {
     memory.__hearthStore = store
     memory.__hearthMemory = true
+    memory.__hearthDurable = false
     return
   }
   try {
     await mkdir(path.dirname(FILE), { recursive: true })
     await writeFile(FILE, JSON.stringify(store, null, 2))
+    memory.__hearthDurable = true
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     if (code === "EROFS" || code === "EACCES" || code === "EPERM" || code === "ENOENT") {
       memory.__hearthStore = store
       memory.__hearthMemory = true
+      memory.__hearthDurable = false
       return
     }
     throw error
@@ -274,7 +297,9 @@ export async function listRooms(userId: string): Promise<{ mine: RoomCard[]; sha
         visibility: clone.visibility,
         ownerName: authorName(store, clone.ownerId),
         ownerId: clone.ownerId,
-        milestoneCount: file.timeline.length + clone.milestones.length,
+        milestoneCount: (clone.milestones ?? []).length,
+        mediaCount: (clone.media ?? []).length,
+        hypotheticalCount: (clone.hypothetical ?? []).length,
         updatedLabel: clone.createdAt,
       }
       return card
@@ -315,6 +340,8 @@ export async function getRoom(roomId: string, viewerId: string): Promise<RoomVie
       ownerId: clone.ownerId,
       ownerName: authorName(store, clone.ownerId),
       note: clone.note ?? "",
+      media: locked ? [] : (clone.media ?? []),
+      hypothetical: locked ? [] : (clone.hypothetical ?? []),
     },
     locked,
     caseFile: file,
@@ -349,7 +376,7 @@ export async function publicRepositories(caseId: string) {
       id: clone.id,
       ownerName: authorName(store, clone.ownerId),
       note: clone.note ?? "",
-      count: clone.milestones.length,
+      count: (clone.milestones ?? []).length + (clone.media ?? []).length + (clone.hypothetical ?? []).length,
       createdAt: clone.createdAt,
     }))
 }

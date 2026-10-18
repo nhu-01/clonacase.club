@@ -1,12 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { deleteRepository } from "@/lib/actions"
 import { Rise } from "@/components/motion"
 import { getCurrentUser } from "@/lib/current"
 import { formatDay } from "@/lib/format"
 import { listRooms } from "@/lib/store"
 
-export const metadata: Metadata = { title: "Rooms" }
+export const metadata: Metadata = { title: "Repository" }
 
 export default async function RoomsPage() {
   const user = await getCurrentUser()
@@ -34,18 +35,27 @@ export default async function RoomsPage() {
           <ul className="mt-4 divide-y divide-border/80 border-y border-border/80">
             {mine.map((room, index) => (
               <Rise key={room.id} delay={index * 0.04}>
-                <li>
-                  <Link href={`/repository/${room.id}`} className="flex items-end justify-between gap-4 py-5">
-                    <span>
-                      <span className="block font-heading text-3xl font-light">{room.caseName}</span>
-                      <span className="mt-1 block text-sm text-muted-foreground">
-                        {room.city} · {room.milestoneCount} milestones · opened {formatDay(room.updatedLabel)}
-                      </span>
-                    </span>
-                    <span className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
-                      {room.visibility}
+                <li className="flex items-end justify-between gap-4 py-5">
+                  <Link href={`/repository/${room.id}`} className="min-w-0">
+                    <span className="block font-heading text-3xl font-light">{room.caseName}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      {room.city} · {room.milestoneCount} notes · {room.mediaCount} media
+                      {room.hypotheticalCount ? ` · hypothetical line` : ""} · opened {formatDay(room.updatedLabel)}
                     </span>
                   </Link>
+                  <span className="flex shrink-0 items-center gap-4">
+                    <span className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{room.visibility}</span>
+                    <Link href={`/repository/${room.id}`} className="text-xs text-foreground underline decoration-primary/40 underline-offset-4">
+                      Edit
+                    </Link>
+                    <form action={deleteRepository}>
+                      <input type="hidden" name="roomId" value={room.id} />
+                      <input type="hidden" name="confirm" value="yes" />
+                      <button type="submit" className="text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4">
+                        Delete
+                      </button>
+                    </form>
+                  </span>
                 </li>
               </Rise>
             ))}

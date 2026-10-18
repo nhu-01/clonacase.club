@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Fraunces, Geist_Mono, Outfit } from "next/font/google"
+import { CloneVeil } from "@/components/clone-veil"
 import { Shell } from "@/components/shell"
 import { getCurrentUser } from "@/lib/current"
 import "./globals.css"
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-full">
         <Shell user={user} />
         {children}
+        <CloneVeil />
       </body>
     </html>
   )

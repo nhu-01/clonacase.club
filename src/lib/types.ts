@@ -93,6 +93,25 @@ export type Brief = {
   closing: string
 }
 
+export type MediaKind = "article" | "photo" | "video" | "pdf"
+
+export type RepoMedia = {
+  id: string
+  kind: MediaKind
+  title: string
+  url: string
+  note: string
+  createdAt: string
+}
+
+export type HypotheticalEvent = {
+  id: string
+  date: string
+  title: string
+  body: string
+  basedOn: string
+}
+
 export type Clone = {
   id: string
   caseId: string
@@ -100,6 +119,8 @@ export type Clone = {
   visibility: "private" | "public"
   createdAt: string
   milestones: Milestone[]
+  media: RepoMedia[]
+  hypothetical: HypotheticalEvent[]
   brief: Brief | null
   note: string
 }
@@ -153,6 +174,8 @@ export type RoomView = {
     ownerId: string
     ownerName: string
     note: string
+    media: RepoMedia[]
+    hypothetical: HypotheticalEvent[]
   }
   locked: boolean
   caseFile: CaseFile
@@ -173,5 +196,7 @@ export type RoomCard = {
   ownerName: string
   ownerId: string
   milestoneCount: number
+  mediaCount: number
+  hypotheticalCount: number
   updatedLabel: string
 }

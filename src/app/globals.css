@@ -274,13 +274,86 @@ html[data-ink] .poster-frame rect {
   }
 }
 
+body > :not(.clone-veil) {
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.clone-opening body > :not(.clone-veil) {
+  opacity: 0.4;
+  transform: scale(0.985);
+}
+
+.clone-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 42%, oklch(0.26 0.11 24 / 0.72), oklch(0.06 0.012 18) 68%);
+  animation: clone-veil-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.clone-veil-out {
+  animation: clone-veil-out 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+@keyframes clone-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes clone-veil-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.repo-arrive {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.plus-sheet {
+  animation: plus-sheet 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes plus-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html.clone-opening body > :not(.clone-veil) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
   .ember,
   .rise,
   .spine,
   .spine-x,
   .dot-pulse,
   .beat,
+  .clone-veil,
+  .clone-veil-out,
+  .repo-arrive,
+  .plus-sheet,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
