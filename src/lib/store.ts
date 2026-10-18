@@ -395,13 +395,28 @@ export async function publicRepositories(caseId: string) {
   const store = await readStore()
   return store.clones
     .filter((clone) => clone.caseId === caseId && clone.visibility === "public")
-    .map((clone) => ({
-      id: clone.id,
-      ownerName: authorName(store, clone.ownerId),
-      note: clone.note ?? "",
-      count: (clone.milestones ?? []).length + (clone.media ?? []).length + (clone.hypothetical ?? []).length,
-      createdAt: clone.createdAt,
-    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((clone) => {
+      const notes = clone.milestones ?? []
+      const media = clone.media ?? []
+      const hypothetical = clone.hypothetical ?? []
+      const preview =
+        notes.find((item) => item.title.trim())?.title ||
+        media.find((item) => item.title.trim())?.title ||
+        hypothetical.find((item) => item.title.trim())?.title ||
+        ""
+      return {
+        id: clone.id,
+        ownerId: clone.ownerId,
+        ownerName: authorName(store, clone.ownerId),
+        note: clone.note ?? "",
+        notes: notes.length,
+        media: media.length,
+        hypothetical: hypothetical.length,
+        preview,
+        createdAt: clone.createdAt,
+      }
+    })
 }
 
 export async function caseThreads(caseId: string) {
