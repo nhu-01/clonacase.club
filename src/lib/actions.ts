@@ -476,6 +476,7 @@ export async function updateEvidence(_prev: ActionState, formData: FormData): Pr
     milestone.imageUrl = fields.imageUrl
     if (clone) clone.brief = null
   })
+  if (!lastWriteDurable()) return { error: "The note did not save." }
   refresh(roomId, owned.room.caseFile.id)
   return { ok: true }
 }
@@ -548,10 +549,7 @@ export async function postThread(_prev: ActionState, formData: FormData): Promis
 
 const MEDIA: MediaKind[] = ["article", "photo", "video", "pdf"]
 
-export async function addMedia(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const roomId = text(formData, "roomId", 40)
-  const owned = await ownedRoom(roomId)
-  if (!owned.user || !owned.room) return { error: owned.error }
+function readMedia(formData: FormData) {
   const kind = text(formData, "kind", 20) as MediaKind
   const title = text(formData, "title", 140)
   const url = cleanUrl(text(formData, "url", 400))
@@ -559,12 +557,21 @@ export async function addMedia(_prev: ActionState, formData: FormData): Promise<
   if (!MEDIA.includes(kind)) return { error: "Choose an article, photo, video, or PDF." }
   if (title.length < 2) return { error: "Give the media a title." }
   if (!url) return { error: "Paste a link that starts with http or https." }
+  return { kind, title, url, note }
+}
+
+export async function addMedia(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.user || !owned.room) return { error: owned.error }
+  const fields = readMedia(formData)
+  if ("error" in fields) return { error: fields.error }
   const item: RepoMedia = {
     id: newId("media"),
-    kind,
-    title,
-    url,
-    note,
+    kind: fields.kind,
+    title: fields.title,
+    url: fields.url,
+    note: fields.note,
     createdAt: new Date().toISOString(),
   }
   await updateStore((store) => {
@@ -591,21 +598,66 @@ export async function deleteMedia(formData: FormData) {
   refresh(roomId, owned.room.caseFile.id)
 }
 
-export async function addHypothetical(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function updateMedia(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const roomId = text(formData, "roomId", 40)
+  const mediaId = text(formData, "mediaId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.room) return { error: owned.error }
+  const fields = readMedia(formData)
+  if ("error" in fields) return { error: fields.error }
+  await updateStore((store) => {
+    const item = store.clones.find((entry) => entry.id === roomId)?.media?.find((entry) => entry.id === mediaId)
+    if (!item) return
+    item.kind = fields.kind
+    item.title = fields.title
+    item.url = fields.url
+    item.note = fields.note
+  })
+  if (!lastWriteDurable()) return { error: "The media did not save." }
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+function readHypothetical(formData: FormData) {
   const date = text(formData, "date", 10)
   const title = text(formData, "title", 140)
   const body = text(formData, "body", 800)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Choose a date." }
   if (title.length < 3) return { error: "Give the event a title." }
-  const event: HypotheticalEvent = { id: newId("hy"), date, title, body, basedOn: "" }
+  return { date, title, body }
+}
+
+export async function addHypothetical(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return { error: owned.error }
+  const fields = readHypothetical(formData)
+  if ("error" in fields) return { error: fields.error }
+  const event: HypotheticalEvent = { id: newId("hy"), date: fields.date, title: fields.title, body: fields.body, basedOn: "" }
   await updateStore((store) => {
     const clone = store.clones.find((entry) => entry.id === roomId)
     if (!clone) return
     if (!clone.hypothetical) clone.hypothetical = []
     clone.hypothetical.push(event)
+  })
+  if (!lastWriteDurable()) return { error: "The hypothetical event did not save." }
+  refresh(roomId, owned.room.caseFile.id)
+  return { ok: true }
+}
+
+export async function updateHypothetical(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const roomId = text(formData, "roomId", 40)
+  const eventId = text(formData, "eventId", 40)
+  const owned = await ownedRoom(roomId)
+  if (!owned.room) return { error: owned.error }
+  const fields = readHypothetical(formData)
+  if ("error" in fields) return { error: fields.error }
+  await updateStore((store) => {
+    const event = store.clones.find((entry) => entry.id === roomId)?.hypothetical?.find((entry) => entry.id === eventId)
+    if (!event) return
+    event.date = fields.date
+    event.title = fields.title
+    event.body = fields.body
   })
   if (!lastWriteDurable()) return { error: "The hypothetical event did not save." }
   refresh(roomId, owned.room.caseFile.id)

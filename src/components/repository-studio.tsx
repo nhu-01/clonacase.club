@@ -14,6 +14,9 @@ import {
   deleteRepository,
   seedHypothetical,
   setVisibility,
+  updateEvidence,
+  updateHypothetical,
+  updateMedia,
 } from "@/lib/actions"
 import { formatDay } from "@/lib/format"
 import type { ActionState, HypotheticalEvent, MediaKind, RepoMedia } from "@/lib/types"
@@ -52,6 +55,175 @@ function MediaPreview({ item }: { item: RepoMedia }) {
     <a href={item.url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm text-primary underline decoration-primary/40 underline-offset-4">
       Open {item.kind}
     </a>
+  )
+}
+
+const quiet = "text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4"
+
+function useSaveCycle(ok: boolean | undefined, pending: boolean) {
+  const router = useRouter()
+  const [wasPending, setWasPending] = useState(false)
+  const [tick, setTick] = useState(0)
+  if (pending && !wasPending) setWasPending(true)
+  else if (!pending && wasPending) {
+    setWasPending(false)
+    if (ok) setTick((value) => value + 1)
+  }
+  useEffect(() => {
+    if (tick > 0) router.refresh()
+  }, [tick, router])
+  return tick
+}
+
+function useEditor(ok: boolean | undefined, pending: boolean) {
+  const [editing, setEditing] = useState(false)
+  const [applied, setApplied] = useState(0)
+  const tick = useSaveCycle(ok, pending)
+  if (tick !== applied) {
+    setApplied(tick)
+    if (tick > 0) setEditing(false)
+  }
+  return [editing, setEditing] as const
+}
+
+function NoteItem({ roomId, note }: { roomId: string; note: Note }) {
+  const [state, save, pending] = useActionState(updateEvidence, initial)
+  const [editing, setEditing] = useEditor(state.ok, pending)
+  return (
+    <li className="border border-primary/25 px-4 py-4">
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(note.date)}</p>
+      {editing ? (
+        <form action={save} className="mt-3 grid gap-3">
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="milestoneId" value={note.id} />
+          <input type="hidden" name="kind" value="lead" />
+          <Label htmlFor={`${note.id}-date`}>Date</Label>
+          <Input id={`${note.id}-date`} name="date" type="date" required defaultValue={note.date} className="h-10" />
+          <Label htmlFor={`${note.id}-title`}>Title</Label>
+          <Input id={`${note.id}-title`} name="title" required minLength={3} defaultValue={note.title} className="h-10" />
+          <Label htmlFor={`${note.id}-body`}>Note</Label>
+          <Textarea id={`${note.id}-body`} name="body" defaultValue={note.body} />
+          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          <Button type="submit" disabled={pending} className="h-10">
+            {pending ? "Saving…" : "Save note"}
+          </Button>
+        </form>
+      ) : (
+        <>
+          <h3 className="mt-1 font-heading text-2xl font-light">{note.title}</h3>
+          {note.body ? <p className="mt-2 text-sm leading-6">{note.body}</p> : null}
+        </>
+      )}
+      <div className="mt-3 flex items-center gap-4">
+        <button type="button" className={quiet} onClick={() => setEditing((value) => !value)}>
+          {editing ? "Cancel" : "Edit"}
+        </button>
+        <form action={deleteEvidence}>
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="milestoneId" value={note.id} />
+          <button type="submit" className={quiet}>
+            Delete
+          </button>
+        </form>
+      </div>
+    </li>
+  )
+}
+
+function MediaItem({ roomId, item }: { roomId: string; item: RepoMedia }) {
+  const [state, save, pending] = useActionState(updateMedia, initial)
+  const [editing, setEditing] = useEditor(state.ok, pending)
+  return (
+    <li className="border border-primary/25 px-4 py-4">
+      {editing ? (
+        <form action={save} className="grid gap-3">
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="mediaId" value={item.id} />
+          <Label htmlFor={`${item.id}-kind`}>Kind</Label>
+          <select id={`${item.id}-kind`} name="kind" defaultValue={item.kind} className="h-10 border border-input bg-transparent px-2 text-sm">
+            {mediaKinds.map((kind) => (
+              <option key={kind.value} value={kind.value}>
+                {kind.label}
+              </option>
+            ))}
+          </select>
+          <Label htmlFor={`${item.id}-title`}>Title</Label>
+          <Input id={`${item.id}-title`} name="title" required minLength={2} defaultValue={item.title} className="h-10" />
+          <Label htmlFor={`${item.id}-url`}>Link</Label>
+          <Input id={`${item.id}-url`} name="url" required defaultValue={item.url} className="h-10" />
+          <Label htmlFor={`${item.id}-note`}>Note</Label>
+          <Textarea id={`${item.id}-note`} name="note" defaultValue={item.note} />
+          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          <Button type="submit" disabled={pending} className="h-10">
+            {pending ? "Saving…" : "Save media"}
+          </Button>
+        </form>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{item.kind}</p>
+          <h3 className="mt-1 font-heading text-2xl font-light">{item.title}</h3>
+          {item.note ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</p> : null}
+          <MediaPreview item={item} />
+        </>
+      )}
+      <div className="mt-3 flex items-center gap-4">
+        <button type="button" className={quiet} onClick={() => setEditing((value) => !value)}>
+          {editing ? "Cancel" : "Edit"}
+        </button>
+        <form action={deleteMedia}>
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="mediaId" value={item.id} />
+          <button type="submit" className={quiet}>
+            Delete
+          </button>
+        </form>
+      </div>
+    </li>
+  )
+}
+
+function HypotheticalItem({ roomId, event }: { roomId: string; event: HypotheticalEvent }) {
+  const [state, save, pending] = useActionState(updateHypothetical, initial)
+  const [editing, setEditing] = useEditor(state.ok, pending)
+  return (
+    <li className="beat relative border border-primary/25 bg-background/40 px-4 py-4">
+      <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
+      {editing ? (
+        <form action={save} className="mt-3 grid gap-3">
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="eventId" value={event.id} />
+          <Label htmlFor={`${event.id}-date`}>Date</Label>
+          <Input id={`${event.id}-date`} name="date" type="date" required defaultValue={event.date} className="h-10" />
+          <Label htmlFor={`${event.id}-title`}>Title</Label>
+          <Input id={`${event.id}-title`} name="title" required minLength={3} defaultValue={event.title} className="h-10" />
+          <Label htmlFor={`${event.id}-body`}>What you are considering</Label>
+          <Textarea id={`${event.id}-body`} name="body" defaultValue={event.body} />
+          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          <Button type="submit" disabled={pending} className="h-10">
+            {pending ? "Saving…" : "Save event"}
+          </Button>
+        </form>
+      ) : (
+        <>
+          <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
+          {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
+          {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
+        </>
+      )}
+      <div className="mt-3 flex items-center gap-4">
+        <button type="button" className={quiet} onClick={() => setEditing((value) => !value)}>
+          {editing ? "Cancel" : "Edit"}
+        </button>
+        <form action={deleteHypothetical}>
+          <input type="hidden" name="roomId" value={roomId} />
+          <input type="hidden" name="eventId" value={event.id} />
+          <button type="submit" className={quiet}>
+            Delete
+          </button>
+        </form>
+      </div>
+    </li>
   )
 }
 
@@ -146,22 +318,17 @@ export function RepositoryStudio({
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
-              {notes.map((note) => (
-                <li key={note.id} className="border border-primary/25 px-4 py-4">
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(note.date)}</p>
-                  <h3 className="mt-1 font-heading text-2xl font-light">{note.title}</h3>
-                  {note.body ? <p className="mt-2 text-sm leading-6">{note.body}</p> : null}
-                  {canEdit ? (
-                    <form action={deleteEvidence} className="mt-3">
-                      <input type="hidden" name="roomId" value={roomId} />
-                      <input type="hidden" name="milestoneId" value={note.id} />
-                      <button type="submit" className="text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4">
-                        Delete
-                      </button>
-                    </form>
-                  ) : null}
-                </li>
-              ))}
+              {notes.map((note) =>
+                canEdit ? (
+                  <NoteItem key={note.id} roomId={roomId} note={note} />
+                ) : (
+                  <li key={note.id} className="border border-primary/25 px-4 py-4">
+                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(note.date)}</p>
+                    <h3 className="mt-1 font-heading text-2xl font-light">{note.title}</h3>
+                    {note.body ? <p className="mt-2 text-sm leading-6">{note.body}</p> : null}
+                  </li>
+                ),
+              )}
             </ul>
           )}
         </section>
@@ -176,23 +343,18 @@ export function RepositoryStudio({
             </p>
           ) : (
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {media.map((item) => (
-                <li key={item.id} className="border border-primary/25 px-4 py-4">
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{item.kind}</p>
-                  <h3 className="mt-1 font-heading text-2xl font-light">{item.title}</h3>
-                  {item.note ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</p> : null}
-                  <MediaPreview item={item} />
-                  {canEdit ? (
-                    <form action={deleteMedia} className="mt-3">
-                      <input type="hidden" name="roomId" value={roomId} />
-                      <input type="hidden" name="mediaId" value={item.id} />
-                      <button type="submit" className="text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4">
-                        Delete
-                      </button>
-                    </form>
-                  ) : null}
-                </li>
-              ))}
+              {media.map((item) =>
+                canEdit ? (
+                  <MediaItem key={item.id} roomId={roomId} item={item} />
+                ) : (
+                  <li key={item.id} className="border border-primary/25 px-4 py-4">
+                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{item.kind}</p>
+                    <h3 className="mt-1 font-heading text-2xl font-light">{item.title}</h3>
+                    {item.note ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</p> : null}
+                    <MediaPreview item={item} />
+                  </li>
+                ),
+              )}
             </ul>
           )}
         </section>
@@ -213,24 +375,19 @@ export function RepositoryStudio({
           ) : (
             <ol className="relative mt-6 space-y-3 pl-8">
               <span aria-hidden="true" className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent" />
-              {sortedHypothetical.map((event, index) => (
-                <li key={event.id} className="beat relative border border-primary/25 bg-background/40 px-4 py-4" style={{ animationDelay: `${index * 0.12}s` }}>
-                  <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
-                  <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
-                  {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
-                  {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
-                  {canEdit ? (
-                    <form action={deleteHypothetical} className="mt-3">
-                      <input type="hidden" name="roomId" value={roomId} />
-                      <input type="hidden" name="eventId" value={event.id} />
-                      <button type="submit" className="text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4">
-                        Delete
-                      </button>
-                    </form>
-                  ) : null}
-                </li>
-              ))}
+              {sortedHypothetical.map((event, index) =>
+                canEdit ? (
+                  <HypotheticalItem key={event.id} roomId={roomId} event={event} />
+                ) : (
+                  <li key={event.id} className="beat relative border border-primary/25 bg-background/40 px-4 py-4" style={{ animationDelay: `${index * 0.12}s` }}>
+                    <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
+                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
+                    <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
+                    {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
+                    {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
+                  </li>
+                ),
+              )}
             </ol>
           )}
         </section>
