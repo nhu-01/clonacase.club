@@ -12,7 +12,7 @@ function Portrait({ record }: { record: WashingtonRecord }) {
   const [failed, setFailed] = useState(false)
   if (!record.image || failed) {
     return (
-      <div className="relative grid h-72 place-items-center bg-[oklch(0.16_0.03_18)]">
+      <div className="relative grid aspect-[3/4] w-full place-items-center bg-[oklch(0.16_0.03_18)]">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-80 [background-image:radial-gradient(circle_at_50%_42%,oklch(0.42_0.14_18/0.55),transparent_64%)]"
@@ -30,7 +30,7 @@ function Portrait({ record }: { record: WashingtonRecord }) {
       src={record.image}
       alt={`Public poster photograph of ${record.name}`}
       onError={() => setFailed(true)}
-      className="h-72 w-full object-cover object-top"
+      className="block h-auto w-full"
     />
   )
 }
@@ -71,12 +71,12 @@ export function WashingtonDossier({
 
       <div className="grid gap-px border-b border-primary/25 bg-primary/20 md:grid-cols-3">
         <figure className="beat flex h-full flex-col bg-card" style={{ animationDelay: "0.08s" }}>
-          <div className="relative">
+          <div className="relative w-full">
             <svg
               aria-hidden="true"
               viewBox="0 0 100 130"
               preserveAspectRatio="none"
-              className="poster-frame pointer-events-none absolute inset-0 z-10 h-72 w-full text-primary"
+              className="poster-frame pointer-events-none absolute inset-0 z-10 h-full w-full text-primary"
             >
               <rect
                 x="1.5"
