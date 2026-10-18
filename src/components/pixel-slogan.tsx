@@ -12,7 +12,7 @@ type Pixel = {
   y: number
   size: number
   color: string
-  delay: number
+  phase: number
 }
 
 function smooth(value: number) {
@@ -44,45 +44,80 @@ export function PixelSlogan() {
     const paintSource = () => {
       const box = rootEl.getBoundingClientRect()
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const width = Math.max(1, Math.round(box.width * dpr))
-      const height = Math.max(1, Math.round(box.height * dpr))
-      off.width = width
-      off.height = height
+      const lines = [...rootEl.querySelectorAll<HTMLElement>("[data-slogan]")]
+      const fontSize = lines[0] ? Number.parseFloat(getComputedStyle(lines[0]).fontSize) || 48 : 48
+      const cell = Math.max(4, Math.round(fontSize * 0.09 * dpr))
+      const pad = cell * 3
+      const inks = lines.map((line) => {
+        const range = document.createRange()
+        range.selectNodeContents(line)
+        return range.getBoundingClientRect()
+      })
+      if (inks.length === 0) return []
+      const minL = Math.min(...inks.map((ink) => ink.left))
+      const minT = Math.min(...inks.map((ink) => ink.top))
+      const maxR = Math.max(...inks.map((ink) => ink.right))
+      const maxB = Math.max(...inks.map((ink) => ink.bottom))
+      const originX = minL - pad / dpr
+      const originY = minT - pad / dpr
+      const cssWidth = maxR - minL + (pad * 2) / dpr
+      const cssHeight = maxB - minT + (pad * 2) / dpr
+      const width = Math.max(1, Math.ceil(cssWidth * dpr))
+      const height = Math.max(1, Math.ceil(cssHeight * dpr))
+
+      canvasEl.style.left = `${originX - box.left}px`
+      canvasEl.style.top = `${originY - box.top}px`
+      canvasEl.style.width = `${cssWidth}px`
+      canvasEl.style.height = `${cssHeight}px`
       canvasEl.width = width
       canvasEl.height = height
+      off.width = width
+      off.height = height
+
       const ctx = off.getContext("2d")
       if (!ctx) return []
       ctx.clearRect(0, 0, width, height)
-      const lines = [...rootEl.querySelectorAll<HTMLElement>("[data-slogan]")]
-      for (const line of lines) {
+      lines.forEach((line, index) => {
         const style = getComputedStyle(line)
-        const range = document.createRange()
-        range.selectNodeContents(line)
-        const ink = range.getBoundingClientRect()
+        const ink = inks[index]
         ctx.font = style.font
         ctx.fillStyle = style.color
-        ctx.letterSpacing = style.letterSpacing
+        if (style.letterSpacing && style.letterSpacing !== "normal") ctx.letterSpacing = style.letterSpacing
         ctx.textBaseline = "top"
-        ctx.fillText(line.textContent || "", (ink.left - box.left) * dpr, (ink.top - box.top) * dpr)
-      }
+        ctx.fillText(line.textContent || "", (ink.left - originX) * dpr, (ink.top - originY) * dpr)
+      })
 
-      const cell = Math.max(2, Math.round(3.5 * dpr))
       const data = ctx.getImageData(0, 0, width, height).data
       const pixels: Pixel[] = []
       for (let y = 0; y < height; y += cell) {
         for (let x = 0; x < width; x += cell) {
-          const sx = Math.min(width - 1, x + (cell >> 1))
-          const sy = Math.min(height - 1, y + (cell >> 1))
-          const i = (sy * width + sx) * 4
-          const alpha = data[i + 3]
-          if (alpha < 48) continue
-          const jitter = ((x * 13 + y * 7) % 17) / 17
+          const x1 = Math.min(width, x + cell)
+          const y1 = Math.min(height, y + cell)
+          let red = 0
+          let green = 0
+          let blue = 0
+          let alpha = 0
+          let count = 0
+          const area = (x1 - x) * (y1 - y)
+          for (let sy = y; sy < y1; sy++) {
+            for (let sx = x; sx < x1; sx++) {
+              const i = (sy * width + sx) * 4
+              const sample = data[i + 3]
+              if (sample < 36) continue
+              red += data[i]
+              green += data[i + 1]
+              blue += data[i + 2]
+              alpha += sample
+              count++
+            }
+          }
+          if (count === 0 || count / area < 0.16) continue
           pixels.push({
             x,
             y,
             size: cell,
-            color: `rgba(${data[i]}, ${data[i + 1]}, ${data[i + 2]}, ${alpha / 255})`,
-            delay: (x / width) * 0.42 + jitter * 0.28,
+            color: `rgba(${(red / count) | 0}, ${(green / count) | 0}, ${(blue / count) | 0}, ${alpha / count / 255})`,
+            phase: ((x * 13 + y * 7) % 628) / 100,
           })
         }
       }
@@ -94,24 +129,43 @@ export function PixelSlogan() {
       if (dead) return
       const pixels = paintSource()
       const ctx = canvasEl.getContext("2d")
-      if (!ctx) return
+      if (!ctx || pixels.length === 0) {
+        setShown(true)
+        setLive(false)
+        return
+      }
       const start = performance.now()
-      const dur = 1700
+      const dur = 2100
       let revealed = false
       const tick = (now: number) => {
         if (dead) return
         const t = Math.min(1, (now - start) / dur)
+        const elapsed = now - start
+        const energy = 1 - smooth(Math.min(1, t / 0.62))
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
+        const appear = smooth(Math.min(1, t / 0.1))
         for (const pixel of pixels) {
-          const alpha = smooth((t - pixel.delay) / 0.38)
-          if (alpha <= 0) continue
-          ctx.globalAlpha = alpha
+          const jx = Math.round(
+            (Math.sin(elapsed * 0.021 + pixel.phase) * 0.65 +
+              Math.sin(elapsed * 0.047 + pixel.phase * 2.2) * 0.35) *
+              pixel.size *
+              0.72 *
+              energy,
+          )
+          const jy = Math.round(
+            (Math.cos(elapsed * 0.018 + pixel.phase * 1.4) * 0.65 +
+              Math.sin(elapsed * 0.041 + pixel.phase) * 0.35) *
+              pixel.size *
+              0.5 *
+              energy,
+          )
+          ctx.globalAlpha = appear
           ctx.fillStyle = pixel.color
-          ctx.fillRect(pixel.x, pixel.y, pixel.size, pixel.size)
+          ctx.fillRect(pixel.x + jx, pixel.y + jy, pixel.size, pixel.size)
         }
         ctx.globalAlpha = 1
         canvasEl.style.opacity = t > 0.72 ? String(1 - (t - 0.72) / 0.28) : "1"
-        if (!revealed && t >= 0.7) {
+        if (!revealed && t >= 0.72) {
           revealed = true
           setShown(true)
         }
@@ -131,7 +185,7 @@ export function PixelSlogan() {
   return (
     <h1
       ref={root}
-      className="relative mt-5 font-heading text-[clamp(2.7rem,7vw,5.4rem)] leading-[0.95] font-light tracking-[-0.035em]"
+      className="relative mt-5 overflow-visible font-heading text-[clamp(2.7rem,7vw,5.4rem)] leading-[0.95] font-light tracking-[-0.035em]"
     >
       <span className={shown ? "slogan-in" : "slogan-hold"}>
         {LINES.map((line) => (
@@ -140,9 +194,7 @@ export function PixelSlogan() {
           </span>
         ))}
       </span>
-      {live ? (
-        <canvas ref={canvas} className="slogan-canvas pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true" />
-      ) : null}
+      {live ? <canvas ref={canvas} className="slogan-canvas pointer-events-none absolute opacity-0" aria-hidden="true" /> : null}
     </h1>
   )
 }
