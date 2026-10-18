@@ -163,7 +163,7 @@ function VisibilityControl({ room }: { room: RoomView }) {
           <DialogDescription>
             {isPublic
               ? "Signed-in volunteers can read it and add notes. The original file stays as it was."
-              : "Public means any signed-in volunteer can read this clone. The archive file does not change."}
+              : "Public means any signed-in volunteer can read this clone. The case file does not change."}
           </DialogDescription>
         </DialogHeader>
         {!isPublic ? (

@@ -12,7 +12,7 @@ const tools = [
   {
     name: "Washington State Patrol missing persons",
     href: "https://wsp.wa.gov/crime/alerts-missing-persons/missing-persons/",
-    detail: "The official adult posters in this archive. The photograph and PDF stay on this site.",
+    detail: "The official adult posters in these cases. The photograph and PDF stay on this site.",
   },
   {
     name: "NamUs",

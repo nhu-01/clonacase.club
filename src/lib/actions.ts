@@ -383,7 +383,7 @@ export async function cloneRecord(formData: FormData): Promise<{ roomId?: string
   if (!user) {
     redirect(`/join?next=/records/${caseId}`)
   }
-  if (!washingtonById(caseId)) return { error: "That poster is not in the archive." }
+  if (!washingtonById(caseId)) return { error: "That poster is not among the cases." }
 
   let roomId = ""
   await updateStore((store) => {
@@ -558,7 +558,7 @@ export async function postThread(_prev: ActionState, formData: FormData): Promis
   if (!user) return { error: "Sign in to join the thread." }
   const caseId = text(formData, "caseId", 64)
   const body = text(formData, "body", 500)
-  if (!washingtonById(caseId)) return { error: "That poster is not in the archive." }
+  if (!washingtonById(caseId)) return { error: "That poster is not among the cases." }
   if (body.length < 2) return { error: "Write a comment first." }
   await updateStore((store) => {
     store.threads.push({

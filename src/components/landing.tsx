@@ -113,7 +113,7 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
 
       <div className="mt-6">
         {searching && matches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing in the archive matches that.</p>
+          <p className="text-sm text-muted-foreground">No case matches that.</p>
         ) : null}
 
         {shown.length > 0 ? (
@@ -147,7 +147,7 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Button render={<Link href="/archive" />} className="h-11 px-5" nativeButton={false}>
-          Enter the archive
+          Browse cases
         </Button>
         <Button
           variant="outline"
