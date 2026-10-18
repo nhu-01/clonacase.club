@@ -8,19 +8,22 @@ function Mark() {
     <svg viewBox="0 0 32 32" className="mark size-[30px] overflow-visible" aria-hidden="true">
       <defs>
         <filter id="mark-glow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="1.05" result="blur" />
+          <feGaussianBlur stdDeviation="0.9" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
-      <path className="mark-floor" d="M5.4 24.2h21.2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path className="mark-bloom" d="M7 24.2V15.2a9 9 0 0 1 18 0v9" pathLength="100" fill="none" stroke="currentColor" strokeWidth="5.2" strokeLinecap="round" />
-      <path className="mark-trace" d="M7 24.2V15.2a9 9 0 0 1 18 0v9" pathLength="100" fill="none" stroke="oklch(0.86 0.09 28)" strokeWidth="1.35" strokeLinecap="round" filter="url(#mark-glow)" />
-      <circle className="mark-halo" r="3.5" fill="oklch(0.72 0.16 24)" />
-      <circle className="mark-rider" r="2.35" fill="oklch(0.95 0.03 60)" filter="url(#mark-glow)" />
-      <circle className="mark-clone" cx="13.6" cy="19.7" r="2.7" fill="oklch(0.5 0.16 24)" filter="url(#mark-glow)" />
+      <circle className="mark-track" cx="16" cy="16" r="9" fill="none" stroke="currentColor" strokeWidth="1.15" />
+      <g className="mark-orbit">
+        <path d="M12.92 7.54A9 9 0 0 1 23.79 20.5" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" opacity="0.45" />
+        <path d="M12.92 7.54A9 9 0 0 1 23.79 20.5" fill="none" stroke="oklch(0.9 0.06 30)" strokeWidth="1.25" strokeLinecap="round" filter="url(#mark-glow)" />
+        <circle cx="12.92" cy="7.54" r="3.15" fill="oklch(0.72 0.16 24)" opacity="0.45" />
+        <circle cx="12.92" cy="7.54" r="2.05" fill="oklch(0.58 0.16 24)" filter="url(#mark-glow)" />
+        <circle cx="23.79" cy="20.5" r="3.7" fill="oklch(0.74 0.15 24)" opacity="0.5" />
+        <circle cx="23.79" cy="20.5" r="2.45" fill="oklch(0.96 0.03 60)" filter="url(#mark-glow)" />
+      </g>
     </svg>
   )
 }
