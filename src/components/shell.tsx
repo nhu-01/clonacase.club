@@ -7,22 +7,29 @@ function Mark() {
   return (
     <svg viewBox="0 0 32 32" className="mark size-[30px] overflow-visible" aria-hidden="true">
       <defs>
-        <filter id="mark-glow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="0.9" result="blur" />
+        <filter id="mark-glow" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="0.7" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
-      <circle className="mark-track" cx="16" cy="16" r="9" fill="none" stroke="currentColor" strokeWidth="1.15" />
-      <g className="mark-orbit">
-        <path d="M12.92 7.54A9 9 0 0 1 23.79 20.5" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" opacity="0.45" />
-        <path d="M12.92 7.54A9 9 0 0 1 23.79 20.5" fill="none" stroke="oklch(0.9 0.06 30)" strokeWidth="1.25" strokeLinecap="round" filter="url(#mark-glow)" />
-        <circle cx="12.92" cy="7.54" r="3.15" fill="oklch(0.72 0.16 24)" opacity="0.45" />
-        <circle cx="12.92" cy="7.54" r="2.05" fill="oklch(0.58 0.16 24)" filter="url(#mark-glow)" />
-        <circle cx="23.79" cy="20.5" r="3.7" fill="oklch(0.74 0.15 24)" opacity="0.5" />
-        <circle cx="23.79" cy="20.5" r="2.45" fill="oklch(0.96 0.03 60)" filter="url(#mark-glow)" />
+      <g className="mark-lead">
+        <path d="M18.51 7.25A9.1 9.1 0 0 1 25.01 17.27" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" opacity="0.34" />
+        <path d="M18.51 7.25A9.1 9.1 0 0 1 25.01 17.27" fill="none" stroke="oklch(0.9 0.05 32)" strokeWidth="1.25" strokeLinecap="round" />
+        <g className="mark-parent">
+          <circle cx="25.01" cy="17.27" r="3.35" fill="oklch(0.75 0.14 24)" opacity="0.42" />
+          <circle cx="25.01" cy="17.27" r="2.25" fill="oklch(0.97 0.02 70)" filter="url(#mark-glow)" />
+        </g>
+      </g>
+      <g className="mark-chase">
+        <path d="M7.82 19.99A9.1 9.1 0 0 1 10.91 8.46" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" opacity="0.34" />
+        <path d="M7.82 19.99A9.1 9.1 0 0 1 10.91 8.46" fill="none" stroke="oklch(0.84 0.08 26)" strokeWidth="1.25" strokeLinecap="round" />
+        <g className="mark-born">
+          <circle cx="10.91" cy="8.46" r="2.9" fill="oklch(0.68 0.16 24)" opacity="0.4" />
+          <circle cx="10.91" cy="8.46" r="1.85" fill="oklch(0.52 0.15 24)" filter="url(#mark-glow)" />
+        </g>
       </g>
     </svg>
   )

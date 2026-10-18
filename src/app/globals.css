@@ -502,20 +502,62 @@ html.clone-opening body > :not(.clone-veil) {
   color: oklch(0.67 0.18 22);
 }
 
-.mark-track {
-  opacity: 0.4;
-}
-
-.mark-orbit {
+.mark-lead,
+.mark-chase {
   transform-box: view-box;
   transform-origin: center;
-  animation: mark-orbit 3.2s linear infinite;
+  animation-duration: 8.4s;
+  animation-timing-function: cubic-bezier(0.22, 0.2, 0.18, 1);
+  animation-iteration-count: infinite;
 }
 
-@keyframes mark-orbit {
-  to {
-    transform: rotate(360deg);
-  }
+.mark-lead {
+  animation-name: mark-lead;
+}
+
+.mark-chase {
+  animation-name: mark-chase;
+}
+
+.mark-born,
+.mark-parent {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mark-born {
+  animation: mark-born 8.4s linear infinite;
+}
+
+.mark-parent {
+  animation: mark-parent 8.4s linear infinite;
+}
+
+@keyframes mark-lead {
+  0% { transform: rotate(0deg); }
+  42% { transform: rotate(156deg); }
+  72% { transform: rotate(276deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes mark-chase {
+  0% { transform: rotate(0deg); }
+  42% { transform: rotate(198deg); }
+  72% { transform: rotate(302deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes mark-born {
+  0% { opacity: 0; transform: scale(0.15); }
+  7% { opacity: 1; transform: scale(0.72); }
+  16% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.2); }
+}
+
+@keyframes mark-parent {
+  0%, 18%, 100% { transform: scale(1); }
+  8% { transform: scale(1.18); }
 }
 
 .reply-in {
@@ -555,7 +597,10 @@ html.clone-opening body > :not(.clone-veil) {
   .plus-choice,
   .repo-plus-icon,
   .reply-in,
-  .mark-orbit,
+  .mark-lead,
+  .mark-chase,
+  .mark-born,
+  .mark-parent,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
