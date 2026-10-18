@@ -24,6 +24,7 @@ export function JoinPanel({ nextPath }: { nextPath: string }) {
         <div className="grid gap-2">
           <Label htmlFor="name">Anonymous username</Label>
           <Input id="name" name="name" autoComplete="off" className="h-10" required />
+          <p className="text-xs leading-5 text-muted-foreground">Do not use your real name.</p>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
