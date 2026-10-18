@@ -184,6 +184,7 @@ export type ActionState = {
     reason: string
     source: "gemini" | "local"
     token: string
+    missingKey?: boolean
   }
 }
 

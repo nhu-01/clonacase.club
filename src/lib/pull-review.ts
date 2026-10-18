@@ -10,6 +10,7 @@ export type PullReview = {
   reason: string
   source: "gemini" | "local"
   token: string
+  missingKey?: boolean
 }
 
 type Draft = {
@@ -244,5 +245,5 @@ export async function reviewDraft(
           mediaKind: draft.mediaKind,
         })
       : ""
-  return { ...review, source, token }
+  return { ...review, source, token, missingKey: !process.env.GEMINI_API_KEY }
 }

@@ -373,22 +373,39 @@ function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }
   }, [])
   const shown = fresh && review?.status === "suggest" ? review : null
   const blocked = fresh && review?.status === "disqualify"
+  const label = review?.source === "gemini" ? "Gemini" : "Checked here"
+  useEffect(() => {
+    if (!fresh || !review) return
+    const form = root.current?.closest("form")
+    if (!form) return
+    const title = form.elements.namedItem("title")
+    const body = form.elements.namedItem("body")
+    const note = form.elements.namedItem("note")
+    const nextTitle = review.status === "suggest" ? review.title : ""
+    const nextBody = review.status === "suggest" ? review.body : review.dropped
+    if (title instanceof HTMLInputElement && nextTitle) title.value = nextTitle
+    if (body instanceof HTMLTextAreaElement) body.value = nextBody
+    if (note instanceof HTMLTextAreaElement) note.value = nextBody
+    const ack = form.querySelector('input[type="checkbox"][name="acknowledge"]')
+    if (ack instanceof HTMLInputElement && review.status === "suggest") ack.checked = true
+  }, [fresh, review])
 
   return (
     <div ref={root} className="grid gap-3">
       {shown ? (
         <div className="border border-primary/35 bg-primary/5 p-3">
-          <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
-            {shown.source === "gemini" ? "Gemini" : "Checked here"}
-          </p>
-          {shown.quote ? <p className="mt-2 text-sm leading-5 text-muted-foreground italic">“{shown.quote}”</p> : null}
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {shown.dropped ? "The rest can be sent as written." : "This can be sent as written."}
-          </p>
-          <p className="mt-2 font-heading text-xl font-light">{shown.title}</p>
-          {shown.body ? <p className="mt-1 text-sm leading-5">{shown.body}</p> : null}
-          {shown.dropped ? <p className="mt-2 text-xs leading-5 text-muted-foreground">Held back: {shown.dropped}</p> : null}
-          {shown.source === "local" ? (
+          <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{label}</p>
+          {shown.dropped ? (
+            <>
+              <p className="mt-2 font-heading text-2xl font-light">Send this revision.</p>
+              <p className="mt-2 font-heading text-xl font-light">{shown.title}</p>
+              {shown.body ? <p className="mt-1 text-sm leading-5">{shown.body}</p> : null}
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">Held back: {shown.dropped}</p>
+            </>
+          ) : (
+            <p className="mt-2 font-heading text-2xl font-light">Looks good to send.</p>
+          )}
+          {shown.missingKey ? (
             <p className="mt-2 text-xs leading-5 text-muted-foreground">Add a Gemini API key to run this check with Gemini.</p>
           ) : null}
           <input type="hidden" name="intent" value="send" />
@@ -398,7 +415,13 @@ function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }
       ) : (
         <input type="hidden" name="intent" value="review" />
       )}
-      {blocked ? <p className="text-sm text-destructive">{review?.reason}</p> : null}
+      {blocked ? (
+        <div className="border border-destructive/40 p-3">
+          <p className="font-mono text-[11px] tracking-[0.16em] text-destructive uppercase">{label}</p>
+          <p className="mt-2 font-heading text-2xl font-light">This cannot be sent.</p>
+          <p className="mt-2 text-sm leading-5 text-destructive">{review?.reason}</p>
+        </div>
+      ) : null}
       {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
       <Button type="submit" formNoValidate={Boolean(shown)} disabled={pending} className="h-10">
         {pending ? "Working…" : shown ? "Send this pull request" : "Check before sending"}
