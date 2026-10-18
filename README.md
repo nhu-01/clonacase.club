@@ -23,7 +23,7 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 
 ## What a room can do
 
-- Clone an open file. The clone starts private, and the original timeline stays put.
+- Clone an open file. It saves into your repository and starts private. Add notes, a link to an article, photo, video, or PDF, or a hypothetical timeline, then make that repository public or delete it.
 - Add milestones with a date, a note, a source, and an optional image link.
 - Leave notes in the room, then pin one onto the timeline with a label.
 - Link another file. The line on the map stays unconfirmed until a different volunteer agrees.

@@ -35,7 +35,7 @@ export default async function RoomsPage() {
           <ul className="mt-4 divide-y divide-border/80 border-y border-border/80">
             {mine.map((room, index) => (
               <Rise key={room.id} delay={index * 0.04}>
-                <li className="flex items-end justify-between gap-4 py-5">
+                <li className="flex flex-col gap-3 py-5 sm:flex-row sm:items-end sm:justify-between">
                   <Link href={`/repository/${room.id}`} className="min-w-0">
                     <span className="block font-heading text-3xl font-light">{room.caseName}</span>
                     <span className="mt-1 block text-sm text-muted-foreground">
@@ -43,7 +43,7 @@ export default async function RoomsPage() {
                       {room.hypotheticalCount ? ` · hypothetical line` : ""} · opened {formatDay(room.updatedLabel)}
                     </span>
                   </Link>
-                  <span className="flex shrink-0 items-center gap-4">
+                  <span className="flex items-center gap-4 sm:shrink-0">
                     <span className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{room.visibility}</span>
                     <Link href={`/repository/${room.id}`} className="text-xs text-foreground underline decoration-primary/40 underline-offset-4">
                       Edit
