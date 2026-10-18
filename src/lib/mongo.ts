@@ -11,6 +11,7 @@ type MemoryGlobal = typeof globalThis & { __mongoClient?: MongoClient }
 
 const memory = globalThis as MemoryGlobal
 let opening: Promise<Db> | null = null
+let pausedUntil = 0
 
 export function usingMongo() {
   return Boolean(process.env.MONGODB_URI)
@@ -20,7 +21,7 @@ async function connect() {
   const uri = process.env.MONGODB_URI
   if (!uri) throw new Error("MONGODB_URI is not set.")
   if (!memory.__mongoClient) {
-    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 8000 })
+    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 4000 })
     try {
       await client.connect()
       memory.__mongoClient = client
@@ -33,14 +34,19 @@ async function connect() {
 }
 
 function ready() {
+  if (Date.now() < pausedUntil) return Promise.reject(new Error("MongoDB is paused."))
   if (!opening) {
     opening = connect()
       .then(async (db) => {
         await ensure(db)
+        pausedUntil = 0
         return db
       })
       .catch((error) => {
         opening = null
+        const message = error instanceof Error ? error.message : ""
+        const blocked = /ssl|whitelist|server selection|timed out|ENOTFOUND|ECONN/i.test(message)
+        pausedUntil = Date.now() + (blocked ? 5 * 60_000 : 30_000)
         throw error
       })
   }

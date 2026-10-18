@@ -26,9 +26,16 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   if (!record) notFound()
   const user = await getCurrentUser()
   if (!user) redirect(`/join?next=/records/${record.id}`)
-  const mine = await roomForUserCase(user.id, record.id)
-  const shared = await publicRepositories(record.id)
-  const posts = await caseThreads(record.id)
+  let mine: Awaited<ReturnType<typeof roomForUserCase>> = null
+  let shared: Awaited<ReturnType<typeof publicRepositories>> = []
+  let posts: Awaited<ReturnType<typeof caseThreads>> = []
+  try {
+    mine = await roomForUserCase(user.id, record.id)
+    shared = await publicRepositories(record.id)
+    posts = await caseThreads(record.id)
+  } catch (error) {
+    console.error("The case desk did not open.", error)
+  }
   const events = await posterTimeline(record.id)
   const fromMongo = Boolean(events && events.length > 0)
 

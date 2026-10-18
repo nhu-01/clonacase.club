@@ -116,9 +116,16 @@ async function writeStore(store: Store) {
     }
   }
   if (hosted()) {
-    await saveRemoteDesk(store)
-    memory.__hearthStore = store
-    return
+    try {
+      await saveRemoteDesk(store)
+      memory.__hearthStore = store
+      return
+    } catch (error) {
+      console.error("The shared desk did not save.", error)
+      memory.__hearthStore = store
+      memory.__hearthMemory = true
+      return
+    }
   }
   if (memory.__hearthMemory) {
     memory.__hearthStore = store
@@ -149,7 +156,14 @@ async function ensure(): Promise<Store> {
       console.error("MongoDB did not open the desk.", error)
     }
   }
-  if (hosted()) return loadRemoteDesk(seedStore)
+  if (hosted()) {
+    try {
+      return await loadRemoteDesk(seedStore)
+    } catch (error) {
+      console.error("The shared desk did not open.", error)
+      return memoryStore()
+    }
+  }
   if (memory.__hearthMemory) return memoryStore()
 
   let store: Store
