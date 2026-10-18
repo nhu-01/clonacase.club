@@ -40,7 +40,7 @@ PHOTON_PROJECT_ID=
 PHOTON_AGENT_HANDLE=
 ```
 
-`PHOTON_AGENT_HANDLE` is the number Photon assigned. A person has to iMessage that number first. After that, a public change on a case they follow is sent in the same conversation: a new or edited note, comment, source, hypothetical event, working note, or a repository that was just shared. That includes a change they make themselves. A repository follow texts that desk even when it is still private, only to the person who followed it.
+`PHOTON_AGENT_HANDLE` is the number Photon assigned. A person has to iMessage that number first. Subscribing on the site then texts "You subscribed to" that case in the same chat. After that, a public change on a case they follow is sent in the same conversation: a new or edited note, comment, source, hypothetical event, working note, or a repository that was just shared. That includes a change they make themselves. A repository follow texts that desk even when it is still private, only to the person who followed it.
 
 The agent also answers on that line: a poster name follows it, `list` shows follows, `stop` and a name ends one, and `latest` and a name reads the newest public note. `/api/photon/inbox` reads new texts. On Vercel it runs every five minutes. Set `CRON_SECRET` so only that cron can call it.
 

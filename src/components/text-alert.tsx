@@ -35,7 +35,7 @@ export function TextAlert({
       <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
         {shown ? (
           <>
-            iMessage <span className="text-foreground">{shown}</span>. The reply comes back in that chat. This number cannot text you first.
+            iMessage <span className="text-foreground">{shown}</span>. Subscribing sends a confirmation in that chat. This number cannot text you first.
           </>
         ) : (
           "The iMessage line is not connected yet."
@@ -69,8 +69,8 @@ export function TextAlert({
           </div>
         </form>
       )}
-      {!watching && state.error ? <p className="mt-3 text-sm text-destructive">{state.error}</p> : null}
-      {!watching && state.note ? <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{state.note}</p> : null}
+      {state.error ? <p className="mt-3 text-sm text-destructive">{state.error}</p> : null}
+      {state.note ? <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{state.note}</p> : null}
       {stopped.error ? <p className="mt-3 text-sm text-destructive">{stopped.error}</p> : null}
       {stopped.note ? <p className="mt-3 text-sm text-muted-foreground">{stopped.note}</p> : null}
     </section>

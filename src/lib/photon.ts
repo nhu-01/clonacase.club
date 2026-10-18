@@ -59,6 +59,24 @@ export async function ensureUser(config: PhotonConfig, handle: string): Promise<
   })
 }
 
+export async function findImessageSpace(config: PhotonConfig, phone: string) {
+  const agent = await ensureUser(config, config.handle)
+  const query = new URLSearchParams({
+    platform: "imessage",
+    participantHandle: phone,
+    orderBy: "last_message_created_at",
+    order: "desc",
+    pageSize: "5",
+  })
+  const page = await call<{ items?: { id?: string; participantIds?: string[] }[] }>(
+    config,
+    `/projects/${config.project}/spaces?${query.toString()}`,
+  )
+  const space = (page.items ?? []).find((item) => item.id && item.participantIds?.includes(agent.id))
+  if (!space?.id) return null
+  return { spaceId: space.id, agentUserId: agent.id }
+}
+
 export async function ensureSpace(config: PhotonConfig, participantIds: string[]) {
   const key = `space-${participantIds.slice().sort().join("-")}`.slice(0, 255)
   return call<PhotonSpace>(config, `/projects/${config.project}/spaces`, {

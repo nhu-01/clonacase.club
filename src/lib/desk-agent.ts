@@ -1,6 +1,6 @@
 import { formatPhone } from "@/lib/format"
 import { heldBack } from "@/lib/pull-review"
-import { ensureSpace, ensureUser, listInbound, photonConfig, sendText, type PhotonConfig } from "@/lib/photon"
+import { ensureSpace, ensureUser, findImessageSpace, listInbound, photonConfig, sendText, type PhotonConfig } from "@/lib/photon"
 import { caseById, newId, readStore, updateStore } from "@/lib/store"
 import { washingtonRecords } from "@/lib/washington-public"
 
@@ -150,8 +150,11 @@ async function handleInbound(config: PhotonConfig, message: { id: string; text: 
     const matches = findCases(command.slice(7))
     if (matches.length !== 1) text = matches.length ? `Which poster? ${matches.map((item) => item.name).join(", ")}.` : "No poster by that name. Text the name as it appears on the poster."
     else {
-      await followCase(message.phone, "", matches[0].id, matches[0].name, message.spaceId, message.agentUserId)
-      text = `Following ${matches[0].name}. A public change on that case will text you here.`
+      const watchId = await followCase(message.phone, "", matches[0].id, matches[0].name, message.spaceId, message.agentUserId)
+      text = subscribedLine({ kind: "case", label: matches[0].name })
+      await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply2-${message.id}`)
+      await markConfirmed(watchId, message.spaceId, message.agentUserId)
+      return
     }
   }
   await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply2-${message.id}`)
@@ -186,6 +189,7 @@ export async function drainInbox() {
   await updateStore((current) => {
     current.inbox = { handled: next }
   })
+  await announceUnconfirmed(config)
   return { checked: count }
 }
 
@@ -248,47 +252,89 @@ async function openConversation(config: PhotonConfig, phone: string) {
   return { spaceId: space.id, agentUserId: agent.id }
 }
 
-export async function confirmWatch(watchId: string) {
-  const config = photonConfig()
-  if (!config) return "Saved. Texts start when the line is connected."
-  await drainInbox()
+function subscribedLine(watch: { kind: string; label: string }) {
+  return watch.kind === "case"
+    ? `You subscribed to ${watch.label}. Public updates on that case will text you here.`
+    : `You subscribed to the ${watch.label} repository. Updates on that desk will text you here.`
+}
+
+async function markConfirmed(watchId: string, spaceId: string, agentUserId: string) {
+  await updateStore((store) => {
+    const watch = (store.alerts ?? []).find((item) => item.id === watchId)
+    if (!watch) return
+    watch.spaceId = spaceId
+    watch.agentUserId = agentUserId
+    watch.confirmedAt = new Date().toISOString()
+    for (const item of store.alerts ?? []) {
+      if (item.phone !== watch.phone || item.spaceId) continue
+      item.spaceId = spaceId
+      item.agentUserId = agentUserId
+    }
+  })
+}
+
+async function chatForPhone(config: PhotonConfig, phone: string, known?: { spaceId: string; agentUserId: string }) {
+  if (known?.spaceId && known.agentUserId) return known
+  try {
+    const live = await findImessageSpace(config, phone)
+    if (live) return live
+  } catch (error) {
+    console.error("Photon could not find the iMessage chat.", error)
+  }
+  try {
+    return await openConversation(config, phone)
+  } catch (error) {
+    console.error("Photon could not open the conversation.", error)
+    return null
+  }
+}
+
+async function announceWatch(config: PhotonConfig, watchId: string) {
   const store = await readStore()
   const watch = (store.alerts ?? []).find((item) => item.id === watchId)
-  if (!watch) return "That alert was not saved."
-  let spaceId = watch.spaceId
-  let agentUserId = watch.agentUserId
-  if (!spaceId || !agentUserId) {
-    try {
-      const opened = await openConversation(config, watch.phone)
-      spaceId = opened.spaceId
-      agentUserId = opened.agentUserId
-      await updateStore((current) => {
-        const item = (current.alerts ?? []).find((entry) => entry.id === watchId)
-        if (!item) return
-        item.spaceId = spaceId
-        item.agentUserId = agentUserId
-      })
-    } catch (error) {
-      console.error("Photon could not open the conversation.", error)
-      return `iMessage ${formatPhone(config.handle)} from this number. The reply comes back in that chat.`
-    }
-  }
-  const text =
-    watch.kind === "case"
-      ? `Following ${watch.label}. A public change on that case will text you here.`
-      : `Following the ${watch.label} repository. A change on that desk will text you here.`
+  if (!watch || watch.confirmedAt) return true
+  const sibling = (store.alerts ?? []).find((item) => item.phone === watch.phone && item.spaceId && item.agentUserId)
+  const chat = await chatForPhone(config, watch.phone, sibling ? { spaceId: sibling.spaceId, agentUserId: sibling.agentUserId } : undefined)
+  if (!chat) return false
+  const attempt = watch.confirmTries ?? 0
   try {
     await sendText(config, {
-      spaceId,
-      senderId: agentUserId,
-      text,
-      idempotencyKey: `clonacase-follow-${watch.id}-${watch.phone}`,
+      spaceId: chat.spaceId,
+      senderId: chat.agentUserId,
+      text: subscribedLine(watch),
+      idempotencyKey: `clonacase-subscribed-${watch.id}-${attempt}`,
     })
   } catch (error) {
     console.error("Photon confirmation did not send.", error)
-    return `iMessage ${formatPhone(config.handle)} from this number. The reply comes back in that chat.`
+    await updateStore((current) => {
+      const item = (current.alerts ?? []).find((entry) => entry.id === watchId)
+      if (!item) return
+      item.confirmTries = (item.confirmTries ?? 0) + 1
+    })
+    return false
   }
-  return "Following. The reply comes back in that iMessage chat."
+  await markConfirmed(watchId, chat.spaceId, chat.agentUserId)
+  return true
+}
+
+async function announceUnconfirmed(config: PhotonConfig) {
+  const store = await readStore()
+  const pending = (store.alerts ?? []).filter((watch) => !watch.confirmedAt)
+  for (const watch of pending) {
+    try {
+      await announceWatch(config, watch.id)
+    } catch (error) {
+      console.error("Photon confirmation did not send.", error)
+    }
+  }
+}
+
+export async function confirmWatch(watchId: string) {
+  const config = photonConfig()
+  if (!config) return "Saved. Texts start when the line is connected."
+  const sent = await announceWatch(config, watchId)
+  if (!sent) return `iMessage ${formatPhone(config.handle)} from this number. The reply comes back in that chat.`
+  return "Subscribed. The confirmation is in that iMessage chat."
 }
 
 async function chatFor(config: PhotonConfig, watch: { id: string; phone: string; spaceId: string; agentUserId: string }) {

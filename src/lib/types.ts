@@ -175,6 +175,8 @@ export type AlertWatch = {
   createdAt: string
   spaceId: string
   agentUserId: string
+  confirmedAt?: string
+  confirmTries?: number
 }
 
 export type Store = {
