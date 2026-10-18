@@ -19,6 +19,8 @@ import {
   updateHypothetical,
   updateMedia,
 } from "@/lib/actions"
+import { LocalDateField, LocalWhen, localDay } from "@/components/local-when"
+import { PullSpotlight, usePullScroll, type SpotlightPull } from "@/components/pull-spotlight"
 import { formatDay } from "@/lib/format"
 import type { ActionState, HypotheticalEvent, MediaKind, RepoMedia } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -39,6 +41,8 @@ type Note = {
   date: string
   title: string
   body: string
+  createdAt: string
+  pullId?: string
 }
 
 function MediaPreview({ item }: { item: RepoMedia }) {
@@ -100,12 +104,53 @@ function EditSwap({ open, view, form }: { open: boolean; view: ReactNode; form: 
   )
 }
 
-function NoteItem({ roomId, note }: { roomId: string; note: Note }) {
+function ReadNote({ note, highlight }: { note: Note; highlight: boolean }) {
+  const ref = usePullScroll(highlight)
+  return (
+    <li ref={ref} className={`border border-primary/25 px-4 py-4 ${highlight ? "pull-highlight" : ""}`}>
+      <p className="text-xs text-muted-foreground">
+        <LocalWhen iso={note.createdAt} />
+      </p>
+      <h3 className="mt-1 font-heading text-2xl font-light">{note.title}</h3>
+      {note.body ? <p className="mt-2 text-sm leading-6">{note.body}</p> : null}
+    </li>
+  )
+}
+
+function ReadMedia({ item, highlight }: { item: RepoMedia; highlight: boolean }) {
+  const ref = usePullScroll(highlight)
+  return (
+    <li ref={ref} className={`border border-primary/25 px-4 py-4 ${highlight ? "pull-highlight" : ""}`}>
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{item.kind}</p>
+      <h3 className="mt-1 font-heading text-2xl font-light">{item.title}</h3>
+      {item.note ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</p> : null}
+      <MediaPreview item={item} />
+    </li>
+  )
+}
+
+function ReadEvent({ event, index, highlight }: { event: HypotheticalEvent; index: number; highlight: boolean }) {
+  const ref = usePullScroll(highlight)
+  return (
+    <li ref={ref} className={`beat relative border border-primary/25 bg-background/40 px-4 py-4 ${highlight ? "pull-highlight" : ""}`} style={{ animationDelay: `${index * 0.12}s` }}>
+      <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
+      <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
+      {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
+      {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
+    </li>
+  )
+}
+
+function NoteItem({ roomId, note, highlight = false }: { roomId: string; note: Note; highlight?: boolean }) {
   const [state, save, pending] = useActionState(updateEvidence, initial)
   const [editing, setEditing] = useEditor(state.ok, pending)
+  const ref = usePullScroll(highlight)
   return (
-    <li className={`item-card border border-primary/25 px-4 py-4 ${editing ? "is-editing" : ""}`}>
-      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(note.date)}</p>
+    <li ref={ref} className={`item-card border border-primary/25 px-4 py-4 ${editing ? "is-editing" : ""} ${highlight ? "pull-highlight" : ""}`}>
+      <p className="text-xs text-muted-foreground">
+        <LocalWhen iso={note.createdAt} />
+      </p>
       <EditSwap
         open={editing}
         view={
@@ -119,8 +164,7 @@ function NoteItem({ roomId, note }: { roomId: string; note: Note }) {
             <input type="hidden" name="roomId" value={roomId} />
             <input type="hidden" name="milestoneId" value={note.id} />
             <input type="hidden" name="kind" value="lead" />
-            <Label htmlFor={`${note.id}-date`}>Date</Label>
-            <Input id={`${note.id}-date`} name="date" type="date" required defaultValue={note.date} className="h-10" />
+            <input type="hidden" name="date" value={note.date} />
             <Label htmlFor={`${note.id}-title`}>Title</Label>
             <Input id={`${note.id}-title`} name="title" required minLength={3} defaultValue={note.title} className="h-10" />
             <Label htmlFor={`${note.id}-body`}>Note</Label>
@@ -148,11 +192,12 @@ function NoteItem({ roomId, note }: { roomId: string; note: Note }) {
   )
 }
 
-function MediaItem({ roomId, item }: { roomId: string; item: RepoMedia }) {
+function MediaItem({ roomId, item, highlight = false }: { roomId: string; item: RepoMedia; highlight?: boolean }) {
   const [state, save, pending] = useActionState(updateMedia, initial)
   const [editing, setEditing] = useEditor(state.ok, pending)
+  const ref = usePullScroll(highlight)
   return (
-    <li className={`item-card border border-primary/25 px-4 py-4 ${editing ? "is-editing" : ""}`}>
+    <li ref={ref} className={`item-card border border-primary/25 px-4 py-4 ${editing ? "is-editing" : ""} ${highlight ? "pull-highlight" : ""}`}>
       <EditSwap
         open={editing}
         view={
@@ -204,11 +249,12 @@ function MediaItem({ roomId, item }: { roomId: string; item: RepoMedia }) {
   )
 }
 
-function HypotheticalItem({ roomId, event }: { roomId: string; event: HypotheticalEvent }) {
+function HypotheticalItem({ roomId, event, highlight = false }: { roomId: string; event: HypotheticalEvent; highlight?: boolean }) {
   const [state, save, pending] = useActionState(updateHypothetical, initial)
   const [editing, setEditing] = useEditor(state.ok, pending)
+  const ref = usePullScroll(highlight)
   return (
-    <li className={`item-card beat relative border border-primary/25 bg-background/40 px-4 py-4 ${editing ? "is-editing" : ""}`}>
+    <li ref={ref} className={`item-card beat relative border border-primary/25 bg-background/40 px-4 py-4 ${editing ? "is-editing" : ""} ${highlight ? "pull-highlight" : ""}`}>
       <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
       <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
       <EditSwap
@@ -310,6 +356,7 @@ export function RepositoryStudio({
   notes,
   media,
   hypothetical,
+  spotlight = null,
 }: {
   roomId: string
   canEdit: boolean
@@ -317,6 +364,7 @@ export function RepositoryStudio({
   notes: Note[]
   media: RepoMedia[]
   hypothetical: HypotheticalEvent[]
+  spotlight?: SpotlightPull | null
 }) {
   const router = useRouter()
   const [open, setOpen] = useState<"closed" | "menu" | "note" | "media" | "hypothetical">("closed")
@@ -345,31 +393,50 @@ export function RepositoryStudio({
     if (refreshTick > 0) router.refresh()
   }, [refreshTick, router])
 
+  useEffect(() => {
+    if (pending || !saved) return
+    setOpen("closed")
+  }, [pending, saved])
+
   const sortedHypothetical = [...hypothetical].sort((a, b) => a.date.localeCompare(b.date))
-  const showNotes = canEdit || notes.length > 0
-  const showMedia = canEdit || media.length > 0
-  const showHypothetical = canEdit || hypothetical.length > 0
+  const highlightedNoteId =
+    spotlight?.kind === "note"
+      ? notes.find((note) => note.pullId === spotlight.id)?.id ??
+        (spotlight.status === "accepted" ? notes.find((note) => note.title === spotlight.title && note.body === spotlight.body)?.id : undefined)
+      : undefined
+  const highlightedMediaId =
+    spotlight?.kind === "media"
+      ? media.find((item) => item.pullId === spotlight.id)?.id ??
+        (spotlight.status === "accepted" ? media.find((item) => item.title === spotlight.title && item.note === spotlight.body)?.id : undefined)
+      : undefined
+  const highlightedEventId =
+    spotlight?.kind === "hypothetical"
+      ? hypothetical.find((event) => event.pullId === spotlight.id)?.id ??
+        (spotlight.status === "accepted"
+          ? hypothetical.find((event) => event.title === spotlight.title && event.body === spotlight.body)?.id
+          : undefined)
+      : undefined
+  const showNotes = canEdit || notes.length > 0 || spotlight?.kind === "note"
+  const showMedia = canEdit || media.length > 0 || spotlight?.kind === "media"
+  const showHypothetical = canEdit || hypothetical.length > 0 || spotlight?.kind === "hypothetical"
 
   return (
     <div className="mt-12">
       {showNotes ? (
         <section>
           <h2 className="font-heading text-3xl font-light">Notes</h2>
-          {notes.length === 0 ? (
+          {notes.length === 0 && spotlight?.kind !== "note" ? (
             <p className="mt-3 text-sm text-muted-foreground">
               {canEdit ? "No notes yet. Use the plus button to add one." : "No notes in this repository."}
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
+              {spotlight?.kind === "note" && !highlightedNoteId ? <PullSpotlight pull={spotlight} /> : null}
               {notes.map((note) =>
                 canEdit ? (
-                  <NoteItem key={note.id} roomId={roomId} note={note} />
+                  <NoteItem key={note.id} roomId={roomId} note={note} highlight={note.id === highlightedNoteId} />
                 ) : (
-                  <li key={note.id} className="border border-primary/25 px-4 py-4">
-                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(note.date)}</p>
-                    <h3 className="mt-1 font-heading text-2xl font-light">{note.title}</h3>
-                    {note.body ? <p className="mt-2 text-sm leading-6">{note.body}</p> : null}
-                  </li>
+                  <ReadNote key={note.id} note={note} highlight={note.id === highlightedNoteId} />
                 ),
               )}
             </ul>
@@ -380,22 +447,18 @@ export function RepositoryStudio({
       {showMedia ? (
         <section className="mt-12">
           <h2 className="font-heading text-3xl font-light">Media</h2>
-          {media.length === 0 ? (
+          {media.length === 0 && spotlight?.kind !== "media" ? (
             <p className="mt-3 text-sm text-muted-foreground">
               {canEdit ? "No articles, photos, videos, or PDFs yet. Use the plus button to add one." : "No media in this repository."}
             </p>
           ) : (
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {spotlight?.kind === "media" && !highlightedMediaId ? <PullSpotlight pull={spotlight} wide /> : null}
               {media.map((item) =>
                 canEdit ? (
-                  <MediaItem key={item.id} roomId={roomId} item={item} />
+                  <MediaItem key={item.id} roomId={roomId} item={item} highlight={item.id === highlightedMediaId} />
                 ) : (
-                  <li key={item.id} className="border border-primary/25 px-4 py-4">
-                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{item.kind}</p>
-                    <h3 className="mt-1 font-heading text-2xl font-light">{item.title}</h3>
-                    {item.note ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</p> : null}
-                    <MediaPreview item={item} />
-                  </li>
+                  <ReadMedia key={item.id} item={item} highlight={item.id === highlightedMediaId} />
                 ),
               )}
             </ul>
@@ -409,7 +472,7 @@ export function RepositoryStudio({
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
             A reading of the poster. It is not a finding, and it does not name a suspect.
           </p>
-          {hypothetical.length === 0 ? (
+          {hypothetical.length === 0 && spotlight?.kind !== "hypothetical" ? (
             <p className="mt-3 text-sm text-muted-foreground">
               {canEdit
                 ? "No hypothetical line yet. Use the plus button to start from the original timeline."
@@ -418,17 +481,12 @@ export function RepositoryStudio({
           ) : (
             <ol className="relative mt-6 space-y-3 pl-8">
               <span aria-hidden="true" className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent" />
+              {spotlight?.kind === "hypothetical" && !highlightedEventId ? <PullSpotlight pull={spotlight} /> : null}
               {sortedHypothetical.map((event, index) =>
                 canEdit ? (
-                  <HypotheticalItem key={event.id} roomId={roomId} event={event} />
+                  <HypotheticalItem key={event.id} roomId={roomId} event={event} highlight={event.id === highlightedEventId} />
                 ) : (
-                  <li key={event.id} className="beat relative border border-primary/25 bg-background/40 px-4 py-4" style={{ animationDelay: `${index * 0.12}s` }}>
-                    <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
-                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
-                    <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
-                    {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
-                    {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
-                  </li>
+                  <ReadEvent key={event.id} event={event} index={index} highlight={event.id === highlightedEventId} />
                 ),
               )}
             </ol>
@@ -466,13 +524,19 @@ export function RepositoryStudio({
                 </div>
               ) : null}
               {view === "note" ? (
-                <form action={addNote} className="grid gap-3">
+                <form
+                  action={addNote}
+                  className="grid gap-3"
+                  onSubmit={(event) => {
+                    const field = event.currentTarget.elements.namedItem("date")
+                    if (field instanceof HTMLInputElement) field.value = localDay()
+                  }}
+                >
                   <input type="hidden" name="roomId" value={roomId} />
                   <input type="hidden" name="kind" value="lead" />
+                  <LocalDateField />
                   {propose ? <input type="hidden" name="pull" value="note" /> : null}
                   <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{propose ? "Note for review" : "Note"}</p>
-                  <Label htmlFor="note-date">Date</Label>
-                  <Input id="note-date" name="date" type="date" required className="h-10" />
                   <Label htmlFor="note-title">Title</Label>
                   <Input id="note-title" name="title" required minLength={3} className="h-10" />
                   <Label htmlFor="note-body">Note</Label>

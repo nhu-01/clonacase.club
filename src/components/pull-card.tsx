@@ -1,7 +1,9 @@
-import Link from "next/link"
+"use client"
+
+import { useRouter } from "next/navigation"
+import type { KeyboardEvent, MouseEvent } from "react"
+import { LocalWhen } from "@/components/local-when"
 import { PullDecision } from "@/components/pull-decision"
-import { Button } from "@/components/ui/button"
-import { formatDay, formatWhen } from "@/lib/format"
 import type { PullKind, PullStatus } from "@/lib/types"
 
 export type PullCardData = {
@@ -10,12 +12,12 @@ export type PullCardData = {
   kind: PullKind
   title: string
   body: string
-  date: string
   url: string
   mediaKind: string
   caseName: string
   authorName: string
   targetOwnerName: string
+  targetRoomId: string
   createdAt: string
 }
 
@@ -31,6 +33,10 @@ function statusLabel(status: PullStatus) {
   return "Declined"
 }
 
+function interactive(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest("button, a, input, textarea, select, form"))
+}
+
 export function PullCard({
   pull,
   incoming,
@@ -40,22 +46,43 @@ export function PullCard({
   incoming: boolean
   delay?: number
 }) {
+  const router = useRouter()
+  const href = `/repository/${pull.targetRoomId}?pull=${pull.id}`
+
+  function travel() {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (!reduce) window.dispatchEvent(new CustomEvent("clonacase:open", { detail: "Opening the pull request" }))
+    window.setTimeout(() => router.push(href), reduce ? 0 : 780)
+  }
+
+  function onClick(event: MouseEvent<HTMLLIElement>) {
+    if (interactive(event.target)) return
+    travel()
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLLIElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return
+    if (interactive(event.target)) return
+    event.preventDefault()
+    travel()
+  }
+
   return (
     <li
-      className="rise w-fit max-w-full border border-primary/30 bg-card/40 px-3 py-2.5 sm:max-w-md"
+      className="pull-card rise w-fit max-w-full border border-primary/30 bg-card/40 px-3 py-2.5 sm:max-w-md"
       style={{ animationDelay: `${delay}s` }}
+      tabIndex={0}
+      role="link"
+      aria-label={`Open ${pull.title} on the original repository`}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
     >
       <p className="font-mono text-[10px] tracking-[0.16em] text-primary uppercase">
         {statusLabel(pull.status)} · {kindLabel(pull.kind)} · {pull.caseName}
       </p>
-      <h3 className="mt-1 font-heading text-xl leading-tight font-light">
-        <Link href={`/pulls/${pull.id}`} className="hover:text-primary">
-          {pull.title}
-        </Link>
-      </h3>
+      <h3 className="mt-1 font-heading text-xl leading-tight font-light">{pull.title}</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        {incoming ? `From ${pull.authorName}` : `To ${pull.targetOwnerName}`} · {formatWhen(pull.createdAt)}
-        {pull.date ? ` · dated ${formatDay(pull.date)}` : ""}
+        {incoming ? `From ${pull.authorName}` : `To ${pull.targetOwnerName}`} · <LocalWhen iso={pull.createdAt} />
       </p>
       {pull.body ? <p className="mt-2 text-sm leading-5">{pull.body}</p> : null}
       {pull.url ? (
@@ -68,17 +95,11 @@ export function PullCard({
           {pull.mediaKind || "Link"}
         </a>
       ) : null}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button
-          render={<Link href={`/pulls/${pull.id}`} />}
-          nativeButton={false}
-          variant="outline"
-          className="h-8 border-primary/40 px-3 text-xs"
-        >
-          Open
-        </Button>
-        {incoming && pull.status === "open" ? <PullDecision id={pull.id} /> : null}
-      </div>
+      {incoming && pull.status === "open" ? (
+        <div className="mt-3">
+          <PullDecision id={pull.id} />
+        </div>
+      ) : null}
     </li>
   )
 }

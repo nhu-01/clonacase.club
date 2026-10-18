@@ -322,6 +322,45 @@ html.clone-opening body > :not(.clone-veil) {
   animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.pull-card {
+  cursor: pointer;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    background-color 0.35s ease;
+}
+
+.pull-card:hover {
+  transform: translateY(-3px);
+  border-color: oklch(0.62 0.16 22 / 0.75);
+}
+
+.pull-card:active {
+  transform: scale(0.985);
+}
+
+.pull-card:focus-visible {
+  outline: 1px solid oklch(0.62 0.16 22 / 0.8);
+  outline-offset: 3px;
+}
+
+.pull-highlight {
+  background-color: oklch(0.58 0.16 22 / 0.22);
+  box-shadow: inset 0 0 0 1px oklch(0.66 0.15 22 / 0.55);
+  animation: pull-wash 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pull-wash {
+  from {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+  to {
+    background-color: oklch(0.58 0.16 22 / 0.22);
+    box-shadow: inset 0 0 0 1px oklch(0.66 0.15 22 / 0.55);
+  }
+}
+
 .demo-gate {
   -webkit-text-security: disc;
 }
@@ -475,6 +514,7 @@ html.clone-opening body > :not(.clone-veil) {
   .clone-veil,
   .clone-veil-out,
   .repo-arrive,
+  .pull-highlight,
   .plus-sheet,
   .plus-swap,
   .plus-choice,
@@ -492,7 +532,8 @@ html.clone-opening body > :not(.clone-veil) {
   .repo-plus-icon,
   .edit-swap,
   .edit-pane-inner,
-  .item-card {
+  .item-card,
+  .pull-card {
     transition: none;
   }
 }

@@ -13,6 +13,7 @@ export type Milestone = {
   createdAt: string
   origin: "file" | "room"
   pinnedFromMessageId?: string
+  pullId?: string
 }
 
 export type Place = {
@@ -102,6 +103,7 @@ export type RepoMedia = {
   url: string
   note: string
   createdAt: string
+  pullId?: string
 }
 
 export type HypotheticalEvent = {
@@ -110,6 +112,7 @@ export type HypotheticalEvent = {
   title: string
   body: string
   basedOn: string
+  pullId?: string
 }
 
 export type DeskLineage = "original" | "cloned" | "fork"

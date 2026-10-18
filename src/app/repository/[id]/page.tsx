@@ -7,7 +7,7 @@ import { RepositoryTake } from "@/components/repository-take"
 import { WashingtonDossier } from "@/components/washington-dossier"
 import { getCurrentUser } from "@/lib/current"
 import { posterTimeline } from "@/lib/mongo"
-import { getRoom, listPulls, takesFor } from "@/lib/store"
+import { getRoom, listPulls, pullForUser, takesFor } from "@/lib/store"
 import { washingtonById } from "@/lib/washington-public"
 
 export async function generateMetadata({
@@ -22,8 +22,15 @@ export async function generateMetadata({
   return { title: room ? room.caseFile.name : "Repository" }
 }
 
-export default async function RepositoryPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RepositoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ pull?: string }>
+}) {
   const { id } = await params
+  const query = await searchParams
   const user = await getCurrentUser()
   if (!user) redirect(`/login?next=/repository/${id}`)
   const room = await getRoom(id, user.id)
@@ -48,7 +55,16 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
   const proposals = sent.filter((pull) => pull.sourceRoomId === room.clone.id)
   const notes = room.milestones
     .filter((item) => item.origin === "room")
-    .map((item) => ({ id: item.id, date: item.date, title: item.title, body: item.body }))
+    .map((item) => ({
+      id: item.id,
+      date: item.date,
+      title: item.title,
+      body: item.body,
+      createdAt: item.createdAt,
+      pullId: item.pullId,
+    }))
+  const requested = query.pull ? await pullForUser(user.id, query.pull) : null
+  const spotlight = requested && requested.targetRoomId === room.clone.id ? requested : null
 
   return (
     <div className="repo-arrive mx-auto w-full max-w-5xl px-5 py-12 pb-28">
@@ -139,6 +155,7 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
         notes={notes}
         media={room.clone.media}
         hypothetical={room.clone.hypothetical}
+        spotlight={spotlight}
       />
     </div>
   )

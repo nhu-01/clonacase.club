@@ -903,8 +903,9 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
         sourceUrl: "",
         imageUrl: "",
         authorId: pull.authorId,
-        createdAt: new Date().toISOString(),
+        createdAt: pull.createdAt,
         origin: "room",
+        pullId: pull.id,
       })
       target.brief = null
     } else if (pull.kind === "media") {
@@ -916,7 +917,8 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
         title: pull.title,
         url: pull.url,
         note: pull.body,
-        createdAt: new Date().toISOString(),
+        createdAt: pull.createdAt,
+        pullId: pull.id,
       })
     } else {
       if (!target.hypothetical) target.hypothetical = []
@@ -926,6 +928,7 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
         title: pull.title,
         body: pull.body,
         basedOn: "Pull request. A reading, not a finding.",
+        pullId: pull.id,
       })
     }
     pull.status = "accepted"
