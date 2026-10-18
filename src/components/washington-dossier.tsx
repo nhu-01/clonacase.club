@@ -43,12 +43,12 @@ export function WashingtonDossier({
   record,
   action,
   events,
-  fromTiger = false,
+  fromMongo = false,
 }: {
   record: WashingtonRecord
   action?: ReactNode
   events?: PosterBeat[]
-  fromTiger?: boolean
+  fromMongo?: boolean
 }) {
   const timeline = events ?? posterBeats(record)
   const facts = [record.place ? `Missing out of ${record.place}` : null, record.height, record.weight]
@@ -142,8 +142,8 @@ export function WashingtonDossier({
       </div>
 
       <div className="px-5 py-6 sm:px-7">
-      {fromTiger ? (
-        <p className="mb-4 font-mono text-[10px] tracking-[0.16em] text-primary uppercase">Tiger Data · ordered by time</p>
+      {fromMongo ? (
+        <p className="mb-4 font-mono text-[10px] tracking-[0.16em] text-primary uppercase">MongoDB · ordered by time</p>
       ) : null}
       <ol className="relative space-y-3 pl-8">
         <span

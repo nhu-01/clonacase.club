@@ -32,18 +32,18 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 
 ## Database
 
-clonacase stores the timeline in Tiger Data. Tiger Data is PostgreSQL with TimescaleDB hypertables, so poster dates, repository notes, discussion posts, and room messages are rows partitioned by time.
+clonacase stores the timeline in MongoDB. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. Emails and passwords are not fields in any document.
 
-Set `DATABASE_URL` to a Postgres connection string. Locally that is TimescaleDB on this machine:
+Set `MONGODB_URI` to a MongoDB connection string. Locally that is:
 
 ```bash
-DATABASE_URL=postgres://clonacase:clonacase@127.0.0.1:5432/clonacase
+MONGODB_URI=mongodb://127.0.0.1:27017/clonacase
 ```
 
-On the hosted site, create a free service in [Tiger Cloud](https://console.tigerdata.com/) and add that connection string as `DATABASE_URL` in the Vercel project. The public posters are loaded into the `poster_events` hypertable. A private repository’s notes go into the `evidence` hypertable. Emails and passwords are not columns in any table.
+On the hosted site, create a free M0 cluster in [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) and add that connection string as `MONGODB_URI` in the Vercel project. The free cluster stays free.
 
-If `DATABASE_URL` is missing, the app falls back to `data/store.json` on your machine, or to a temporary shared document when it is running on Vercel.
+If `MONGODB_URI` is missing, the app falls back to `data/store.json` on your machine, or to a temporary shared document when it is running on Vercel.
 
 ## Stack
 
-Next.js, React, TypeScript, Tailwind, shadcn/ui, and Tiger Data (PostgreSQL and TimescaleDB). Sign-in is a signed cookie. There is no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.
+Next.js, React, TypeScript, Tailwind, shadcn/ui, and MongoDB. Sign-in is a signed cookie. There is no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.
