@@ -674,13 +674,26 @@ export async function updateMedia(_prev: ActionState, formData: FormData): Promi
   return { ok: true }
 }
 
+function readClock(formData: FormData) {
+  const raw = text(formData, "time", 8)
+  if (!raw) return ""
+  const match = /^(\d{2}):(\d{2})/.exec(raw)
+  if (!match) return null
+  const hour = Number(match[1])
+  const minute = Number(match[2])
+  if (hour > 23 || minute > 59) return null
+  return `${match[1]}:${match[2]}`
+}
+
 function readHypothetical(formData: FormData) {
   const date = text(formData, "date", 10)
+  const time = readClock(formData)
   const title = text(formData, "title", 140)
   const body = text(formData, "body", 800)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Choose a date." }
+  if (time === null) return { error: "Use an hour and minute, or leave the time empty." }
   if (title.length < 3) return { error: "Give the event a title." }
-  return { date, title, body }
+  return { date, time, title, body }
 }
 
 export async function addHypothetical(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -691,7 +704,7 @@ export async function addHypothetical(_prev: ActionState, formData: FormData): P
   if (blocked) return { error: blocked }
   const fields = readHypothetical(formData)
   if ("error" in fields) return { error: fields.error }
-  const event: HypotheticalEvent = { id: newId("hy"), date: fields.date, title: fields.title, body: fields.body, basedOn: "" }
+  const event: HypotheticalEvent = { id: newId("hy"), date: fields.date, time: fields.time, title: fields.title, body: fields.body, basedOn: "" }
   await updateStore((store) => {
     const clone = store.clones.find((entry) => entry.id === roomId)
     if (!clone) return
@@ -716,6 +729,7 @@ export async function updateHypothetical(_prev: ActionState, formData: FormData)
     const event = store.clones.find((entry) => entry.id === roomId)?.hypothetical?.find((entry) => entry.id === eventId)
     if (!event) return
     event.date = fields.date
+    event.time = fields.time
     event.title = fields.title
     event.body = fields.body
   })
@@ -737,6 +751,7 @@ export async function seedHypothetical(formData: FormData) {
     clone.hypothetical = beats.map((beat) => ({
       id: newId("hy"),
       date: beat.sort,
+      time: "",
       title: beat.title,
       body: beat.body,
       basedOn: beat.title,
@@ -840,7 +855,7 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
   }
 
   const intent = text(formData, "intent", 20)
-  let payload: { title: string; body: string; date: string; mediaKind: MediaKind | ""; url: string }
+  let payload: { title: string; body: string; date: string; time: string; mediaKind: MediaKind | ""; url: string }
   if (intent === "send") {
     const signed = verifyReview(text(formData, "reviewToken", 12000))
     if (!signed || signed.roomId !== roomId || signed.pull !== pull) {
@@ -850,21 +865,22 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
       title: signed.title,
       body: signed.body,
       date: signed.date,
+      time: signed.time || "",
       mediaKind: (signed.mediaKind || "") as MediaKind | "",
       url: signed.url,
     }
   } else if (pull === "note") {
     const fields = readEvidence(formData)
     if ("error" in fields) return { error: fields.error }
-    payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
+    payload = { title: fields.title, body: fields.body, date: fields.date, time: "", mediaKind: "", url: "" }
   } else if (pull === "media") {
     const fields = readMedia(formData)
     if ("error" in fields) return { error: fields.error }
-    payload = { title: fields.title, body: fields.note, date: "", mediaKind: fields.kind, url: fields.url }
+    payload = { title: fields.title, body: fields.note, date: "", time: "", mediaKind: fields.kind, url: fields.url }
   } else {
     const fields = readHypothetical(formData)
     if ("error" in fields) return { error: fields.error }
-    payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
+    payload = { title: fields.title, body: fields.body, date: fields.date, time: fields.time, mediaKind: "", url: "" }
   }
 
   const preview = await readStore()
@@ -881,6 +897,7 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
       title: payload.title,
       body: payload.body,
       date: payload.date,
+      time: payload.time,
       url: payload.url,
       mediaKind: payload.mediaKind,
     })
@@ -911,6 +928,7 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
       title: payload.title,
       body: payload.body,
       date: payload.date,
+      time: payload.time,
       mediaKind: payload.mediaKind,
       url: payload.url,
     })
@@ -979,7 +997,8 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
       if (!target.hypothetical) target.hypothetical = []
       target.hypothetical.push({
         id: newId("hy"),
-        date: pull.date || new Date().toISOString().slice(0, 10),
+        date: (pull.date || new Date().toISOString().slice(0, 10)).slice(0, 10),
+        time: pull.time || "",
         title: pull.title,
         body: pull.body,
         basedOn: "Pull request. A reading, not a finding.",

@@ -109,6 +109,7 @@ export type RepoMedia = {
 export type HypotheticalEvent = {
   id: string
   date: string
+  time: string
   title: string
   body: string
   basedOn: string
@@ -149,6 +150,7 @@ export type PullRequest = {
   title: string
   body: string
   date: string
+  time: string
   mediaKind: MediaKind | ""
   url: string
 }
@@ -185,6 +187,8 @@ export type ActionState = {
     source: "gemini" | "local"
     token: string
     missingKey?: boolean
+    date?: string
+    time?: string
   }
 }
 

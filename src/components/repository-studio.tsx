@@ -21,7 +21,7 @@ import {
 } from "@/lib/actions"
 import { LocalDateField, LocalWhen, localDay } from "@/components/local-when"
 import { PullSpotlight, usePullScroll, type SpotlightPull } from "@/components/pull-spotlight"
-import { formatDay } from "@/lib/format"
+import { formatStamp } from "@/lib/format"
 import type { ActionState, HypotheticalEvent, MediaKind, RepoMedia } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -134,7 +134,7 @@ function ReadEvent({ event, index, highlight }: { event: HypotheticalEvent; inde
   return (
     <li ref={ref} className={`beat relative border border-primary/25 bg-background/40 px-4 py-4 ${highlight ? "pull-highlight" : ""}`} style={{ animationDelay: `${index * 0.12}s` }}>
       <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
-      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatStamp(event.date, event.time)}</p>
       <h3 className="mt-1 font-heading text-2xl font-light">{event.title}</h3>
       {event.body ? <p className="mt-2 text-sm leading-6">{event.body}</p> : null}
       {event.basedOn ? <p className="mt-2 text-xs text-muted-foreground">From the poster · {event.basedOn}</p> : null}
@@ -256,7 +256,7 @@ function HypotheticalItem({ roomId, event, highlight = false }: { roomId: string
   return (
     <li ref={ref} className={`item-card beat relative border border-primary/25 bg-background/40 px-4 py-4 ${editing ? "is-editing" : ""} ${highlight ? "pull-highlight" : ""}`}>
       <span aria-hidden="true" className="dot-pulse absolute top-6 -left-[27px] size-2.5 rounded-full bg-primary ring-4 ring-background" />
-      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatDay(event.date)}</p>
+      <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatStamp(event.date, event.time)}</p>
       <EditSwap
         open={editing}
         view={
@@ -270,8 +270,16 @@ function HypotheticalItem({ roomId, event, highlight = false }: { roomId: string
           <form action={save} className="mt-3 grid gap-3">
             <input type="hidden" name="roomId" value={roomId} />
             <input type="hidden" name="eventId" value={event.id} />
-            <Label htmlFor={`${event.id}-date`}>Date</Label>
-            <Input id={`${event.id}-date`} name="date" type="date" required defaultValue={event.date} className="h-10" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor={`${event.id}-date`}>Date</Label>
+                <Input id={`${event.id}-date`} name="date" type="date" required defaultValue={event.date} className="h-10" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`${event.id}-time`}>Time</Label>
+                <Input id={`${event.id}-time`} name="time" type="time" defaultValue={event.time || ""} className="h-10" />
+              </div>
+            </div>
             <Label htmlFor={`${event.id}-title`}>Title</Label>
             <Input id={`${event.id}-title`} name="title" required minLength={3} defaultValue={event.title} className="h-10" />
             <Label htmlFor={`${event.id}-body`}>What you are considering</Label>
@@ -381,11 +389,15 @@ function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }
     const title = form.elements.namedItem("title")
     const body = form.elements.namedItem("body")
     const note = form.elements.namedItem("note")
+    const dateField = form.elements.namedItem("date")
+    const timeField = form.elements.namedItem("time")
     const nextTitle = review.status === "suggest" ? review.title : ""
     const nextBody = review.status === "suggest" ? review.body : review.dropped
     if (title instanceof HTMLInputElement && nextTitle) title.value = nextTitle
     if (body instanceof HTMLTextAreaElement) body.value = nextBody
     if (note instanceof HTMLTextAreaElement) note.value = nextBody
+    if (dateField instanceof HTMLInputElement && dateField.type === "date" && review.date) dateField.value = review.date.slice(0, 10)
+    if (timeField instanceof HTMLInputElement && review.time) timeField.value = review.time
     const ack = form.querySelector('input[type="checkbox"][name="acknowledge"]')
     if (ack instanceof HTMLInputElement && review.status === "suggest") ack.checked = true
   }, [fresh, review])
@@ -398,6 +410,9 @@ function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }
           {shown.dropped ? (
             <>
               <p className="mt-2 font-heading text-2xl font-light">Send this revision.</p>
+              {shown.time ? (
+                <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{formatStamp(shown.date || "", shown.time)}</p>
+              ) : null}
               <p className="mt-2 font-heading text-xl font-light">{shown.title}</p>
               {shown.body ? <p className="mt-1 text-sm leading-5">{shown.body}</p> : null}
               <p className="mt-2 text-xs leading-5 text-muted-foreground">Held back: {shown.dropped}</p>
@@ -479,7 +494,7 @@ export function RepositoryStudio({
     setOpen("closed")
   }, [pending, saved])
 
-  const sortedHypothetical = [...hypothetical].sort((a, b) => a.date.localeCompare(b.date))
+  const sortedHypothetical = [...hypothetical].sort((a, b) => `${a.date}T${a.time || ""}`.localeCompare(`${b.date}T${b.time || ""}`))
   const highlightedNoteId =
     spotlight?.kind === "note"
       ? notes.find((note) => note.pullId === spotlight.id)?.id ??
@@ -687,8 +702,16 @@ export function RepositoryStudio({
                     <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
                       {propose ? "Hypothetical event for review" : "Hypothetical event"}
                     </p>
-                    <Label htmlFor="hy-date">Date</Label>
-                    <Input id="hy-date" name="date" type="date" required className="h-10" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-2">
+                        <Label htmlFor="hy-date">Date</Label>
+                        <Input id="hy-date" name="date" type="date" required className="h-10" />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="hy-time">Time</Label>
+                        <Input id="hy-time" name="time" type="time" className="h-10" />
+                      </div>
+                    </div>
                     <Label htmlFor="hy-title">Title</Label>
                     <Input id="hy-title" name="title" required minLength={3} className="h-10" />
                     <Label htmlFor="hy-body">What you are considering</Label>

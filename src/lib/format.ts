@@ -11,6 +11,23 @@ export function formatDay(iso: string) {
   })
 }
 
+export function formatClock(value: string) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return ""
+  const hour = Number(match[1])
+  const minute = match[2]
+  if (hour > 23) return ""
+  const suffix = hour >= 12 ? "PM" : "AM"
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minute} ${suffix}`
+}
+
+export function formatStamp(date: string, time?: string) {
+  const day = formatDay(date)
+  const clock = time ? formatClock(time) : ""
+  return clock ? `${day} · ${clock}` : day
+}
+
 export function formatDayLong(iso: string) {
   const [year, month, day] = iso.slice(0, 10).split("-").map(Number)
   if (!year || !month || !day) return iso

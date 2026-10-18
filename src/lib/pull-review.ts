@@ -11,6 +11,8 @@ export type PullReview = {
   source: "gemini" | "local"
   token: string
   missingKey?: boolean
+  date?: string
+  time?: string
 }
 
 type Draft = {
@@ -19,6 +21,7 @@ type Draft = {
   title: string
   body: string
   date: string
+  time: string
   url: string
   mediaKind: string
 }
@@ -141,7 +144,9 @@ export function verifyReview(token: string): SignedDraft | null {
     const parsed = JSON.parse(Buffer.from(data, "base64url").toString("utf8")) as SignedDraft
     if (!parsed.exp || parsed.exp < Date.now()) return null
     if (!parsed.roomId || !parsed.title) return null
-    return parsed
+    const time = typeof parsed.time === "string" ? parsed.time : ""
+    if (time && !/^\d{2}:\d{2}$/.test(time)) return null
+    return { ...parsed, time }
   } catch {
     return null
   }
@@ -241,9 +246,10 @@ export async function reviewDraft(
           title: review.title,
           body: review.body,
           date: draft.date,
+          time: draft.time || "",
           url: draft.url,
           mediaKind: draft.mediaKind,
         })
       : ""
-  return { ...review, source, token, missingKey: !process.env.GEMINI_API_KEY }
+  return { ...review, source, token, missingKey: !process.env.GEMINI_API_KEY, date: draft.date, time: draft.time || "" }
 }
