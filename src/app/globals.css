@@ -181,12 +181,8 @@ body {
   animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.slogan-hold {
-  opacity: 0;
-}
-
 .slogan-in {
-  animation: slogan-in 0.55s ease both;
+  animation: slogan-in 0.9s ease both;
 }
 
 @keyframes slogan-in {
@@ -602,12 +598,7 @@ html.clone-opening body > :not(.clone-veil) {
     offset-distance: 62%;
   }
 
-  .slogan-hold,
   .slogan-in {
     opacity: 1;
-  }
-
-  .slogan-canvas {
-    display: none;
   }
 }

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
-import { PixelSlogan } from "@/components/pixel-slogan"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { washingtonRecords, type WashingtonRecord } from "@/lib/washington-public"
@@ -88,7 +87,10 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
     >
       <Flashlight />
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Public record</p>
-      <PixelSlogan />
+      <h1 className="slogan-in mt-5 font-heading text-[clamp(2.7rem,7vw,5.4rem)] leading-[0.95] font-light tracking-[-0.035em]">
+        <span className="block">Clone the Case,</span>
+        <span className="block italic text-primary">Find the Trace</span>
+      </h1>
       <p className="rise mt-6 max-w-xl text-sm leading-6 text-muted-foreground" style={{ animationDelay: "0.08s" }}>
         The timeline is the next page. A clone of the case starts private.
       </p>
