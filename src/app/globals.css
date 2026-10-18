@@ -322,6 +322,10 @@ html.clone-opening body > :not(.clone-veil) {
   animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.demo-gate {
+  -webkit-text-security: disc;
+}
+
 .plus-sheet {
   animation: plus-sheet 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

@@ -17,7 +17,7 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 ## Sign in
 
-Any made-up email and password will open a desk. The password is thrown away. The email and username stay in a signed browser cookie for that visit. Emails and passwords are not written to the database.
+Any made-up email and word will open a desk. The word is thrown away, and the box is not a browser password field, so Chrome does not run a breach check on it. The email and username stay in a signed browser cookie for that visit. Emails and passwords are not written to the database.
 
 The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password works for those too.
 
@@ -32,7 +32,7 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 
 ## Database
 
-clonacase stores the timeline in MongoDB. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. Emails and passwords are not fields in any document.
+clonacase stores the timeline in MongoDB when `MONGODB_URI` connects. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. If that database refuses the connection, the same desk is kept in a private Vercel Blob file instead, so a clone still saves. Emails and passwords are not fields in any document.
 
 Set `MONGODB_URI` to a MongoDB connection string. Locally that is:
 

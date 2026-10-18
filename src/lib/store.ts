@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto"
 import { mkdir, readFile, writeFile } from "fs/promises"
 import path from "path"
+import { loadBlobDesk, saveBlobDesk, usingBlob } from "@/lib/blob-desk"
 import { loadRemoteDesk, saveRemoteDesk } from "@/lib/remote-desk"
 import { loadDesk, saveDesk, usingMongo } from "@/lib/mongo"
 import { CASES, SEEDED_CONNECTION } from "@/lib/seed"
@@ -133,6 +134,16 @@ async function writeStore(store: Store) {
       console.error("MongoDB did not save the desk.", error)
     }
   }
+  if (usingBlob()) {
+    try {
+      await saveBlobDesk(store)
+      memory.__hearthStore = store
+      memory.__hearthDurable = true
+      return
+    } catch (error) {
+      console.error("The desk store did not save.", error)
+    }
+  }
   if (hosted()) {
     try {
       await saveRemoteDesk(store)
@@ -177,6 +188,18 @@ async function ensure(): Promise<Store> {
       return store
     } catch (error) {
       console.error("MongoDB did not open the desk.", error)
+    }
+  }
+  if (usingBlob()) {
+    try {
+      const loaded = await loadBlobDesk()
+      const store = loaded ?? blankStore()
+      if (!loaded || seedStore(store)) await saveBlobDesk(store)
+      memory.__hearthStore = store
+      memory.__hearthDurable = true
+      return store
+    } catch (error) {
+      console.error("The desk store did not open.", error)
     }
   }
   if (hosted()) {

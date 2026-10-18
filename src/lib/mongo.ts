@@ -45,8 +45,8 @@ function ready() {
       .catch((error) => {
         opening = null
         const message = error instanceof Error ? error.message : ""
-        const blocked = /ssl|whitelist|server selection|timed out|ENOTFOUND|ECONN/i.test(message)
-        pausedUntil = Date.now() + (blocked ? 5 * 60_000 : 30_000)
+        const blocked = /ssl|whitelist|server selection|timed out|ENOTFOUND|ECONN|auth/i.test(message)
+        pausedUntil = Date.now() + (blocked ? 10 * 60_000 : 30_000)
         throw error
       })
   }

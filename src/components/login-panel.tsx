@@ -23,7 +23,7 @@ function DemoDesk({
     <form action={action} className="rounded-2xl border border-border/80 bg-card/60 p-4">
       <input type="hidden" name="name" value={name} />
       <input type="hidden" name="email" value={email} />
-      <input type="hidden" name="password" value="demo" />
+      <input type="hidden" name="gate" value="demo" />
       <input type="hidden" name="next" value={nextPath} />
       <p className="font-heading text-2xl font-light">{name}</p>
       <p className="mt-1 text-xs text-muted-foreground">{email}</p>
@@ -55,22 +55,29 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
         </div>
       </div>
       <div className="flex flex-col justify-end gap-10">
-        <form action={action} className="grid gap-4">
+        <form action={action} autoComplete="off" className="grid gap-4">
           <input type="hidden" name="next" value={nextPath} />
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="text" autoComplete="off" className="h-10" required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="gate">Password</Label>
             <Input
-              id="password"
-              name="password"
-              type="password"
+              id="gate"
+              name="gate"
+              type="text"
               autoComplete="off"
-              className="h-10"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-1p-ignore="true"
+              data-lpignore="true"
+              className="demo-gate h-10"
               required
             />
+            <p className="text-xs leading-5 text-muted-foreground">
+              Any word works. It is thrown away, so Chrome will not check it against a breach list.
+            </p>
           </div>
           {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
           <Button type="submit" disabled={pending} className="h-11">
@@ -81,7 +88,7 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
           <summary className="cursor-pointer text-sm text-muted-foreground transition-colors hover:text-foreground">
             Open your own desk
           </summary>
-          <form action={create} className="mt-4 grid gap-4">
+          <form action={create} autoComplete="off" className="mt-4 grid gap-4">
             <input type="hidden" name="next" value={nextPath} />
             <div className="grid gap-2">
               <Label htmlFor="name">Anonymous username</Label>
@@ -93,8 +100,19 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
               <Input id="new-email" name="email" type="text" autoComplete="off" className="h-10" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-password">Password</Label>
-              <Input id="new-password" name="password" type="password" autoComplete="off" className="h-10" required />
+              <Label htmlFor="new-gate">Password</Label>
+              <Input
+                id="new-gate"
+                name="gate"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-1p-ignore="true"
+                data-lpignore="true"
+                className="demo-gate h-10"
+                required
+              />
             </div>
             {created.error ? <p className="text-sm text-destructive">{created.error}</p> : null}
             <Button type="submit" variant="outline" disabled={creating} className="h-11">

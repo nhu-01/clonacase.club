@@ -42,7 +42,7 @@ function refresh(roomId: string, caseId?: string) {
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = text(formData, "email", 120)
-  const password = String(formData.get("password") ?? "")
+  const password = String(formData.get("gate") ?? formData.get("password") ?? "")
   const given = text(formData, "name", 40)
   if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
   const name = given || email.split("@")[0] || "guest"
@@ -53,7 +53,7 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 export async function signup(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const name = text(formData, "name", 40)
   const email = text(formData, "email", 120)
-  const password = String(formData.get("password") ?? "")
+  const password = String(formData.get("gate") ?? formData.get("password") ?? "")
   if (!name) return { error: "Choose a username. It does not have to be your real name." }
   if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
   await setSession(demoIdentity(name, email))
