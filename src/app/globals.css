@@ -499,65 +499,24 @@ html.clone-opening body > :not(.clone-veil) {
 }
 
 .mark {
-  color: oklch(0.67 0.18 22);
+  color: oklch(0.58 0.14 22);
 }
 
-.mark-lead,
-.mark-chase {
-  transform-box: view-box;
-  transform-origin: center;
-  animation-duration: 8.4s;
-  animation-timing-function: cubic-bezier(0.22, 0.2, 0.18, 1);
-  animation-iteration-count: infinite;
+.mark-flow,
+.mark-echo {
+  offset-path: path("M 3 11 C 3 5 11.2 5 17 11 C 22.8 17 31 17 31 11 C 31 5 22.8 5 17 11 C 11.2 17 3 17 3 11");
+  offset-rotate: 0deg;
+  animation: mark-flow 8.5s linear infinite;
 }
 
-.mark-lead {
-  animation-name: mark-lead;
+.mark-echo {
+  animation-delay: -3.1s;
 }
 
-.mark-chase {
-  animation-name: mark-chase;
-}
-
-.mark-born,
-.mark-parent {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.mark-born {
-  animation: mark-born 8.4s linear infinite;
-}
-
-.mark-parent {
-  animation: mark-parent 8.4s linear infinite;
-}
-
-@keyframes mark-lead {
-  0% { transform: rotate(0deg); }
-  42% { transform: rotate(156deg); }
-  72% { transform: rotate(276deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes mark-chase {
-  0% { transform: rotate(0deg); }
-  42% { transform: rotate(198deg); }
-  72% { transform: rotate(302deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes mark-born {
-  0% { opacity: 0; transform: scale(0.15); }
-  7% { opacity: 1; transform: scale(0.72); }
-  16% { opacity: 1; transform: scale(1); }
-  90% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.2); }
-}
-
-@keyframes mark-parent {
-  0%, 18%, 100% { transform: scale(1); }
-  8% { transform: scale(1.18); }
+@keyframes mark-flow {
+  to {
+    offset-distance: 100%;
+  }
 }
 
 .reply-in {
@@ -597,10 +556,8 @@ html.clone-opening body > :not(.clone-veil) {
   .plus-choice,
   .repo-plus-icon,
   .reply-in,
-  .mark-lead,
-  .mark-chase,
-  .mark-born,
-  .mark-parent,
+  .mark-flow,
+  .mark-echo,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
@@ -619,4 +576,11 @@ html.clone-opening body > :not(.clone-veil) {
     transition: none;
   }
 
+  .mark-flow {
+    offset-distance: 18%;
+  }
+
+  .mark-echo {
+    offset-distance: 62%;
+  }
 }
