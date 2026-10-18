@@ -20,26 +20,22 @@ export function JoinPanel({ nextPath }: { nextPath: string }) {
         Choose an anonymous username.
       </h1>
       <p className="mt-5 text-sm leading-6 text-muted-foreground">
-        The timeline opens after this. The name is what other people see on a thread or a public
-        repository.
+        This is a demo. Any made-up email and password will open the timeline. They are not saved.
       </p>
       <form action={action} className="mt-8 grid gap-4">
         <input type="hidden" name="next" value={nextPath} />
         <div className="grid gap-2">
           <Label htmlFor="name">Anonymous username</Label>
-          <Input id="name" name="name" autoComplete="nickname" className="h-10" required minLength={3} maxLength={20} />
-          <p className="text-xs leading-5 text-muted-foreground">
-            Do not use your real name. Letters, numbers, and hyphens only.
-          </p>
+          <Input id="name" name="name" autoComplete="off" className="h-10" required />
+          <p className="text-xs leading-5 text-muted-foreground">Do not use your real name.</p>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" className="h-10" required />
-          <p className="text-xs leading-5 text-muted-foreground">The email stays off the public pages.</p>
+          <Input id="email" name="email" type="text" autoComplete="off" className="h-10" required />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} className="h-10" required />
+          <Input id="password" name="password" type="password" autoComplete="off" className="h-10" required />
         </div>
         {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
         <Button type="submit" disabled={pending} className="h-11">

@@ -5,10 +5,9 @@ import { redirect } from "next/navigation"
 import { composeBrief } from "@/lib/brief"
 import { getCurrentUser } from "@/lib/current"
 import { isHttpUrl, isInternalPath, safeNext } from "@/lib/format"
-import { hashPassword, setSession, verifyPassword, clearSession } from "@/lib/session"
+import { clearSession, demoIdentity, setSession } from "@/lib/session"
 import {
   caseById,
-  findUserByEmail,
   getRoom,
   newId,
   updateStore,
@@ -40,45 +39,22 @@ function refresh(roomId: string, caseId?: string) {
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const email = text(formData, "email", 120).toLowerCase()
+  const email = text(formData, "email", 120)
   const password = String(formData.get("password") ?? "")
-  const user = await findUserByEmail(email)
-  if (!user || !verifyPassword(password, user.passwordHash)) {
-    return { error: "That email and password do not match a desk." }
-  }
-  await setSession(user.id)
+  const given = text(formData, "name", 40)
+  if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
+  const name = given || email.split("@")[0] || "guest"
+  await setSession(demoIdentity(name, email))
   redirect(safeNext(formData.get("next")))
 }
 
 export async function signup(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const name = text(formData, "name", 20)
-  const email = text(formData, "email", 120).toLowerCase()
+  const name = text(formData, "name", 40)
+  const email = text(formData, "email", 120)
   const password = String(formData.get("password") ?? "")
-  if (!/^[A-Za-z0-9_-]{3,20}$/.test(name)) {
-    return { error: "Use 3 to 20 letters, numbers, or hyphens. Leave your real name off this desk." }
-  }
-  if (!email.includes("@")) return { error: "Use an email address." }
-  if (password.length < 8) return { error: "Use at least 8 characters." }
-  const existing = await findUserByEmail(email)
-  if (existing) return { error: "That email already has a desk. Sign in instead." }
-
-  const id = newId("user")
-  let taken = false
-  await updateStore((store) => {
-    if (store.users.some((user) => user.name.toLowerCase() === name.toLowerCase())) {
-      taken = true
-      return
-    }
-    store.users.push({
-      id,
-      name,
-      email,
-      passwordHash: hashPassword(password),
-      createdAt: new Date().toISOString(),
-    })
-  })
-  if (taken) return { error: "That username is already taken." }
-  await setSession(id)
+  if (!name) return { error: "Choose a username. It does not have to be your real name." }
+  if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
+  await setSession(demoIdentity(name, email))
   redirect(safeNext(formData.get("next")))
 }
 

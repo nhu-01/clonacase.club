@@ -15,16 +15,11 @@ npm run dev
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-## Desks already set
+## Sign in
 
-| Name | Email | Password |
-| --- | --- | --- |
-| Ada Voss | ada@clonacase.club | watchlight |
-| Leif Moran | leif@clonacase.club | watchlight |
+Any made-up email and password will open a desk. The password is thrown away. The email and username stay in a signed browser cookie for that visit and are not written down. There is no MongoDB database and no Teradata database.
 
-Ada created the sample link between Mara Ellison and Helen Cho. Sign in as Leif to confirm it.
-
-You can also open your own desk from the sign-in page.
+The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password works for those too.
 
 ## What a room can do
 
@@ -35,10 +30,8 @@ You can also open your own desk from the sign-in page.
 - Draft a brief from the milestones already in the room. It lists the sourced sequence, gaps of ten days or more, leads, and inconclusive notes.
 - Share the room only after every sourced milestone names a source, and you confirm the room names no suspect.
 
-Rooms, notes, and accounts are stored in `data/store.json` on the machine running the app. That folder is local and is not committed.
-
-On Vercel the disk is read-only, so rooms, notes, and new accounts are kept in a shared document. A visit on a new server can still open them. That document is a prototype desk: if it is cleared, the rooms go with it and the two sample accounts are created again.
+Notes inside a repository are kept in `data/store.json` on the machine running the app. That folder is local and is not committed. On Vercel the disk is read-only, so those notes sit in a temporary shared document so a clone can be opened again. If that document is cleared, the notes go with it. Emails and passwords are not in that document.
 
 ## Stack
 
-Next.js, React, TypeScript, Tailwind, and shadcn/ui. Sign-in is a signed cookie. There is no external database and no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.
+Next.js, React, TypeScript, Tailwind, and shadcn/ui. Sign-in is a signed cookie. There is no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.

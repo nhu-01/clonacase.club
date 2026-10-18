@@ -2,9 +2,8 @@ import { randomBytes } from "crypto"
 import { mkdir, readFile, writeFile } from "fs/promises"
 import path from "path"
 import { loadRemoteDesk, saveRemoteDesk } from "@/lib/remote-desk"
-import { CASES, DEMO_ACCOUNTS, SEEDED_CONNECTION } from "@/lib/seed"
+import { CASES, SEEDED_CONNECTION } from "@/lib/seed"
 import { washingtonById, type WashingtonRecord } from "@/lib/washington-public"
-import { hashPassword } from "@/lib/session"
 import type {
   CaseFile,
   ConnectionView,
@@ -77,23 +76,14 @@ function seedStore(store: Store) {
     changed = true
   }
 
-  for (const demo of DEMO_ACCOUNTS) {
-    const existing = store.users.find((user) => user.id === demo.id)
-    if (!existing) {
-      store.users.push({
-        id: demo.id,
-        name: demo.name,
-        email: demo.email,
-        passwordHash: hashPassword(demo.password),
-        createdAt: "2024-05-01T00:00:00.000Z",
-      })
-      changed = true
-    } else if (existing.email !== demo.email || existing.name !== demo.name) {
-      existing.email = demo.email
-      existing.name = demo.name
+  for (const user of store.users) {
+    if (user.passwordHash || user.email) {
+      user.passwordHash = ""
+      user.email = ""
       changed = true
     }
   }
+
   if (!store.connections.some((link) => link.id === SEEDED_CONNECTION.id)) {
     store.connections.push({ ...SEEDED_CONNECTION, confirmedBy: [...SEEDED_CONNECTION.confirmedBy] })
     changed = true
@@ -217,6 +207,10 @@ export async function toPublicUser(id: string | null) {
 
 function authorName(store: Store, authorId: string | null) {
   if (!authorId) return "Public file"
+  const demo = /^demo_([a-z0-9]+)_/i.exec(authorId)
+  if (demo) return demo[1]
+  if (authorId === "user-ada") return "Ada Voss"
+  if (authorId === "user-leif") return "Leif Moran"
   return store.users.find((user) => user.id === authorId)?.name ?? "Volunteer"
 }
 

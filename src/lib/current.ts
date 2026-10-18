@@ -1,11 +1,8 @@
-import { findUserById } from "@/lib/store"
-import { readSessionUserId } from "@/lib/session"
+import { readSession } from "@/lib/session"
 import type { PublicUser } from "@/lib/types"
 
 export async function getCurrentUser(): Promise<PublicUser | null> {
-  const id = await readSessionUserId()
-  if (!id) return null
-  const user = await findUserById(id)
-  if (!user) return null
-  return { id: user.id, name: user.name, email: user.email }
+  const session = await readSession()
+  if (!session) return null
+  return { id: session.id, name: session.name, email: session.email }
 }

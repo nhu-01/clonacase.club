@@ -253,18 +253,3 @@ export const SEEDED_CONNECTION: Connection = {
   confirmedBy: [],
   createdAt: "2024-05-02T15:00:00.000Z",
 }
-
-export const DEMO_ACCOUNTS = [
-  {
-    id: "user-ada",
-    name: "Ada Voss",
-    email: "ada@clonacase.club",
-    password: "watchlight",
-  },
-  {
-    id: "user-leif",
-    name: "Leif Moran",
-    email: "leif@clonacase.club",
-    password: "watchlight",
-  },
-] as const
