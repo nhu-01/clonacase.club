@@ -22,7 +22,7 @@ function Plate({ item }: { item: MilestoneView }) {
         src={item.imageUrl}
         alt=""
         onError={() => setFailed(true)}
-        className="mt-4 max-h-52 w-full rounded-lg object-cover"
+        className="mt-4 block h-auto w-full rounded-lg"
       />
     )
   }

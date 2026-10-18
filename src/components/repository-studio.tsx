@@ -42,11 +42,11 @@ function MediaPreview({ item }: { item: RepoMedia }) {
     return (
       // User media is an https link, not a file stored here.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={item.url} alt="" className="mt-3 max-h-56 w-full object-cover" />
+      <img src={item.url} alt="" className="mt-3 block h-auto w-full" />
     )
   }
   if (item.kind === "video" && /\.(mp4|webm)(\?|$)/i.test(item.url)) {
-    return <video src={item.url} controls className="mt-3 max-h-56 w-full" />
+    return <video src={item.url} controls className="mt-3 block h-auto w-full" />
   }
   return (
     <a href={item.url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm text-primary underline decoration-primary/40 underline-offset-4">

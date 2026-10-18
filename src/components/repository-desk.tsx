@@ -49,7 +49,7 @@ function Media({ url }: { url: string }) {
   return (
     // User-supplied media is an arbitrary https URL.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" onError={() => setFailed(true)} className="mt-3 max-h-64 w-full object-cover" />
+    <img src={url} alt="" onError={() => setFailed(true)} className="mt-3 block h-auto w-full" />
   )
 }
 
