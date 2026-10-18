@@ -382,6 +382,9 @@ function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }
             {shown.source === "gemini" ? "Gemini" : "Checked here"}
           </p>
           {shown.quote ? <p className="mt-2 text-sm leading-5 text-muted-foreground italic">“{shown.quote}”</p> : null}
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {shown.dropped ? "The rest can be sent as written." : "This can be sent as written."}
+          </p>
           <p className="mt-2 font-heading text-xl font-light">{shown.title}</p>
           {shown.body ? <p className="mt-1 text-sm leading-5">{shown.body}</p> : null}
           {shown.dropped ? <p className="mt-2 text-xs leading-5 text-muted-foreground">Held back: {shown.dropped}</p> : null}

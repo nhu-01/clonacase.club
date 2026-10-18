@@ -116,42 +116,8 @@ export function localReview(record: WashingtonRecord | null, title: string, body
     dropped: removed,
     reason: removed
       ? "The part that names a suspect, a private address, or a family member off the poster was held back."
-      : "This can be sent. New public details stay.",
+      : "This can be sent as written.",
   }
-}
-
-function tighten(record: WashingtonRecord | null, review: Omit<PullReview, "token" | "source">): Omit<PullReview, "token" | "source"> {
-  if (review.status === "disqualify") return { ...review, quote: "", title: "", body: "" }
-  const local = localReview(record, review.title, review.body)
-  if (local.status === "disqualify") {
-    return {
-      ...local,
-      reason: review.reason || local.reason,
-      dropped: [review.dropped, local.dropped].filter(Boolean).join(" "),
-    }
-  }
-  return {
-    status: "suggest",
-    quote: review.quote || local.quote,
-    title: local.title || review.title,
-    body: local.body,
-    dropped: [review.dropped, local.dropped].filter(Boolean).join(" "),
-    reason: local.dropped ? local.reason : review.reason || local.reason,
-  }
-}
-
-function covered(body: string, sentence: string) {
-  const words = sentence.toLowerCase().match(/[a-z0-9']{4,}/g) ?? []
-  if (!words.length) return body.toLowerCase().includes(sentence.toLowerCase())
-  const hay = body.toLowerCase()
-  const hits = words.filter((word) => hay.includes(word)).length
-  return hits / words.length >= 0.6
-}
-
-function preserve(safeBody: string, suggested: string) {
-  const missing = sentences(safeBody).filter((sentence) => !covered(suggested, sentence))
-  if (!missing.length) return suggested
-  return [suggested, ...missing].filter(Boolean).join(" ")
 }
 
 function sign(draft: Draft) {
@@ -185,13 +151,12 @@ async function geminiReview(record: WashingtonRecord | null, title: string, body
   if (!key) return null
   const prompt = [
     "Review this draft before it is sent as a pull request.",
-    "A volunteer may add new public information. Keep it.",
-    "Keep a detail that is already on the poster, including age, height, weight, place, last seen, agency, and phone.",
-    "Hold back only a sentence that names a suspect, gives a private street address, or names a family member who is not in the poster.",
-    "Do not hold back a sentence only because it was not copied from the poster summary.",
-    "Do not invent a fact, do not guess where the person went, and do not name a suspect.",
+    "Do not rewrite it. Do not add a title, a summary, or any fact from the poster.",
+    "A clue is fine, including something a person saw, as long as it names no suspect, gives no private street address, and names no family member who is not in the poster.",
+    "Copy the title and body through unchanged when they are safe.",
+    "Hold back only an unsafe sentence, in the volunteer's own words.",
     "Disqualify only when no safe sentence remains.",
-    "Quote a short line from the poster.",
+    "The quote must be a short line copied from the poster, not from the draft.",
     "",
     posterBrief(record),
     "",
@@ -253,18 +218,13 @@ export async function reviewDraft(
     const remote = await geminiReview(record, draft.title, draft.body)
     if (remote) {
       source = "gemini"
-      if (safe.status === "disqualify") {
-        review = { ...safe, reason: remote.reason || safe.reason }
-      } else if (remote.status === "suggest") {
-        const cleaned = tighten(record, { ...remote, dropped: safe.dropped })
-        review = tighten(record, {
-          ...cleaned,
-          title: cleaned.title || safe.title,
-          body: preserve(safe.body, cleaned.body),
-          dropped: safe.dropped,
-          quote: cleaned.quote || safe.quote,
-          reason: safe.dropped ? safe.reason : cleaned.reason || safe.reason,
-        })
+      review = {
+        ...safe,
+        quote: safe.quote,
+        title: safe.title,
+        body: safe.body,
+        dropped: safe.dropped,
+        reason: safe.reason,
       }
     }
   } catch {
