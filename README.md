@@ -17,7 +17,7 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 ## Sign in
 
-Sign in with an email and password, or choose a username on a first visit. The email, username, and password are not saved.
+Sign in with an email and password, or choose a username on a first visit. Emails and passwords are not written down.
 
 ## What a room can do
 

@@ -19,7 +19,6 @@ export function JoinPanel({ nextPath }: { nextPath: string }) {
       <h1 className="mt-4 font-heading text-5xl leading-none font-light tracking-tight">
         Choose an anonymous username.
       </h1>
-      <p className="mt-5 text-sm leading-6 text-muted-foreground">Your username and password are not saved.</p>
       <form action={action} autoComplete="off" className="mt-8 grid gap-4">
         <input type="hidden" name="next" value={nextPath} />
         <div className="grid gap-2">

@@ -17,7 +17,6 @@ export function LoginPanel({ nextPath }: { nextPath: string }) {
     <div className="mx-auto w-full max-w-xl px-5 py-16">
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Sign in</p>
       <h1 className="mt-4 font-heading text-5xl leading-none font-light tracking-tight">Sign in.</h1>
-      <p className="mt-5 text-sm leading-6 text-muted-foreground">Your email and password are not saved.</p>
       <form action={action} autoComplete="off" className="mt-8 grid gap-4">
         <input type="hidden" name="next" value={nextPath} />
         <div className="grid gap-2">
