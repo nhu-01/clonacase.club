@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { UserRound } from "lucide-react"
 import { logout } from "@/lib/actions"
 import type { PublicUser } from "@/lib/types"
 
@@ -59,8 +58,9 @@ export function Shell({ user, notices = 0 }: { user: PublicUser | null; notices?
           )}
           {user ? (
             <form action={logout} className="flex items-center">
-              <span className="grid size-7 place-items-center rounded-full border border-primary/45 text-primary" aria-label="Anonymous" title="Anonymous">
-                <UserRound className="size-3.5" aria-hidden="true" />
+              <span className="inline-flex max-w-28 items-center gap-1.5 px-1 text-foreground sm:max-w-40">
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary" />
+                <span className="truncate">{user.name}</span>
               </span>
               <button
                 type="submit"
