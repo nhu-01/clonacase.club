@@ -32,16 +32,15 @@ Sign in with an email and password, or choose a username on a first visit. Email
 
 ## Text alerts
 
-Photon 2.0 can text someone who follows a case or a repository. This uses the beta API at `https://api.photon.codes/v1`, not the older Spectrum SDK. In the [Photon beta dashboard](https://photon.codes/docs/beta/get-started/project), create a project, an API key with `project:read` and `project:write`, and an iMessage shared line. Put these in the environment:
+Photon 2.0 can iMessage someone who follows a case or a repository. This uses the beta API at `https://api.photon.codes/v1`. In the [Photon dashboard](https://app.photon.codes/sign-in), create a project, an API key with `project:read` and `project:write`, and an iMessage shared line. Put these in the environment:
 
 ```bash
 PHOTON_API_KEY=
 PHOTON_PROJECT_ID=
 PHOTON_AGENT_HANDLE=
-PHOTON_PLATFORM=imessage
 ```
 
-`PHOTON_AGENT_HANDLE` is the number Photon assigned. A person has to text that number first. After that, a new public note, source, or hypothetical event on a case they follow is sent in the same conversation. A repository follow texts that desk even when it is still private, only to the person who followed it.
+`PHOTON_AGENT_HANDLE` is the number Photon assigned. A person has to iMessage that number first. After that, a new public note, source, or hypothetical event on a case they follow is sent in the same conversation. A repository follow texts that desk even when it is still private, only to the person who followed it.
 
 The agent also answers on that line: a poster name follows it, `list` shows follows, `stop` and a name ends one, and `latest` and a name reads the newest public note. `/api/photon/inbox` reads new texts. On Vercel it runs every five minutes. Set `CRON_SECRET` so only that cron can call it.
 

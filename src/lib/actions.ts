@@ -1104,7 +1104,7 @@ export async function followByText(_prev: ActionState, formData: FormData): Prom
   const targetId = text(formData, "targetId", 80)
   const phone = phoneHandle(text(formData, "phone", 80))
   if (kind !== "case" && kind !== "repository") return { error: "Choose a case or a repository." }
-  if (!phone) return { error: "Use a phone number, with the country code, or an iMessage email." }
+  if (!phone) return { error: "Use the phone number or Apple email you send iMessage from." }
   let label = ""
   if (kind === "case") {
     const record = washingtonById(targetId)

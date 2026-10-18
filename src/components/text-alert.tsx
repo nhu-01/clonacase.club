@@ -26,8 +26,8 @@ export function TextAlert({
   const [stopped, stop, stopping] = useActionState(stopText, initial)
   const headline = kind === "case" ? "Text this case" : "Text this repository"
   const detail = line
-    ? `Message ${line} once, from the number you put here. A shared line cannot text you first.`
-    : "The line is not connected yet. A number saved here starts when it is."
+    ? `iMessage ${line} once, from the number you put here. A shared line cannot text you first.`
+    : "The iMessage line is not connected yet. A number saved here starts when it is."
 
   return (
     <section className="mt-10 border border-border/80 bg-card/40 px-5 py-5">
@@ -48,7 +48,7 @@ export function TextAlert({
           <input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="targetId" value={targetId} />
           <div className="grid gap-2">
-            <Label htmlFor={`${kind}-phone`}>Phone or iMessage email</Label>
+            <Label htmlFor={`${kind}-phone`}>iMessage phone or Apple email</Label>
             <Input id={`${kind}-phone`} name="phone" autoComplete="tel" defaultValue={phone} className="h-10" required />
           </div>
           <Button type="submit" disabled={pending} className="h-10">

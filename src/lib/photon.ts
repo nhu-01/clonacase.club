@@ -1,12 +1,10 @@
 const API = "https://api.photon.codes/v1"
 
-export type PhotonPlatform = "imessage" | "sms" | "email" | "whatsapp" | "telegram"
-
 export type PhotonConfig = {
   key: string
   project: string
   handle: string
-  platform: PhotonPlatform
+  platform: "imessage"
 }
 
 export function photonConfig(): PhotonConfig | null {
@@ -14,11 +12,7 @@ export function photonConfig(): PhotonConfig | null {
   const project = process.env.PHOTON_PROJECT_ID?.trim()
   const handle = process.env.PHOTON_AGENT_HANDLE?.trim()
   if (!key || !project || !handle) return null
-  const platform = process.env.PHOTON_PLATFORM?.trim() || "imessage"
-  if (platform !== "imessage" && platform !== "sms" && platform !== "email" && platform !== "whatsapp" && platform !== "telegram") {
-    return null
-  }
-  return { key, project, handle, platform }
+  return { key, project, handle, platform: "imessage" }
 }
 
 export function phoneHandle(raw: string) {
