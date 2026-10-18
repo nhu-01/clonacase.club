@@ -1,3 +1,4 @@
+import { cleanOutgoing, think } from "@/lib/agent-mind"
 import { formatPhone } from "@/lib/format"
 import { heldBack } from "@/lib/pull-review"
 import { ensureSpace, ensureUser, findImessageSpace, listInbound, photonConfig, sendText, type PhotonConfig } from "@/lib/photon"
@@ -40,7 +41,7 @@ export function answerText(text: string, following: string[]) {
   const words = text.trim().replace(/\s+/g, " ")
   const lower = words.toLowerCase()
   if (!lower || /^(help|\?|hi|hello|hey)$/.test(lower)) {
-    return "clonacase. Text a name to follow that poster. list shows what you follow. stop and a name ends it. latest and a name reads the newest public update."
+    return "clonacase. Text a poster name to follow it, or ask about one. list shows what you follow. stop and a name ends it. latest and a name reads the newest public update."
   }
   if (lower === "latest") return "Text latest and a name."
   if (lower === "list" || lower === "following" || lower === "mine" || /total cases|my cases|what do i follow|cases i subscribed|how many cases/.test(lower)) {
@@ -55,7 +56,9 @@ export function answerText(text: string, following: string[]) {
   if (latest) return `latest:${latest[1]}`
   const follow = /^(?:subscribe|follow)\s+(.+)$/i.exec(words)
   if (follow) return `follow:${follow[1]}`
-  return `follow:${words}`
+  const named = findCases(words)
+  if (named.length === 1 && words.length <= named[0].name.length + 8) return `follow:${named[0].name}`
+  return ""
 }
 
 async function reply(config: PhotonConfig, spaceId: string, senderId: string, text: string, key: string) {
@@ -124,11 +127,85 @@ async function latestLine(name: string) {
   return `${matches[0].name}: ${cleanTitle(update.title)}. ${SITE}/repository/${update.roomId}`
 }
 
+function posterNotes(text: string, following: { label: string; targetId: string }[], store: Awaited<ReturnType<typeof readStore>>) {
+  const wanted = new Map<string, string>()
+  for (const watch of following) wanted.set(watch.targetId, watch.label)
+  for (const record of findCases(text)) wanted.set(record.id, record.name)
+  const lines = [...wanted.entries()].slice(0, 6).map(([id, label]) => {
+    const record = washingtonRecords.find((item) => item.id === id)
+    const rooms = store.clones.filter((clone) => clone.caseId === id && clone.visibility === "public")
+    const titles = rooms
+      .flatMap((room) => (room.milestones ?? []).filter((item) => item.origin === "room" && item.createdAt).map((item) => item.title))
+      .slice(0, 3)
+    if (!record) return `${label}. No poster text is loaded.`
+    return [
+      `${record.name}, age ${record.age}, ${record.place ?? "Washington"}.`,
+      `Last seen ${record.lastSeen ?? "on the poster"}.`,
+      record.agency ? `${record.agency}${record.phone ? ` ${record.phone}` : ""}.` : "",
+      record.summary,
+      titles.length ? `Public notes: ${titles.join("; ")}.` : "No public repository note yet.",
+      `${SITE}/records/${record.id}`,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  })
+  const followed = following.map((watch) => watch.label)
+  return [`Following: ${followed.length ? followed.join(", ") : "nobody"}.`, ...lines].join("\n")
+}
+
+function localFact(text: string, followingIds: string[]) {
+  const lower = text.toLowerCase()
+  const mentioned = washingtonRecords.filter((record) => lower.includes(record.name.toLowerCase()))
+  const matches = findCases(text)
+  const record =
+    mentioned.length === 1
+      ? mentioned[0]
+      : matches.length === 1
+        ? matches[0]
+        : followingIds.length === 1
+          ? washingtonRecords.find((item) => item.id === followingIds[0])
+          : undefined
+  if (!record) return ""
+  if (/where (is|are)|found him|found her|sighting|located/.test(lower)) {
+    return `${record.name} is listed out of ${record.place ?? "Washington"}. I do not have a newer place.`
+  }
+  if (/last seen|when was|when did|what date/.test(lower)) {
+    return `${record.name} was last seen ${record.lastSeen ?? "on the poster"}${record.place ? `, out of ${record.place}` : ""}.`
+  }
+  if (/how old|age/.test(lower)) return `The poster lists ${record.name} at age ${record.age}.`
+  if (/height|tall/.test(lower) && record.height) return `The poster lists ${record.name} at ${record.height}.`
+  if (/weight/.test(lower) && record.weight) return `The poster lists ${record.name} at ${record.weight}.`
+  if (/phone|agency|police|sheriff|who do i call|who to call/.test(lower) && record.agency) {
+    return `${record.agency}${record.phone ? `, ${record.phone}` : ""}.`
+  }
+  if (/poster|link|page|url/.test(lower)) return `${record.name}: ${SITE}/records/${record.id}`
+  return ""
+}
+
+async function interpret(text: string, following: { label: string; targetId: string }[], notes: string) {
+  const labels = following.map((watch) => watch.label)
+  const quick = answerText(text, labels)
+  if (quick) return quick
+  const fact = localFact(text, following.map((watch) => watch.targetId))
+  if (fact) return fact
+  const thought = await think(text, notes)
+  if (!thought) return "Text a poster name to follow it. Ask about a poster and I will answer from the public poster and public notes. list shows what you follow."
+  if (thought.action === "list") {
+    const count = labels.length
+    if (!count) return "You are not following a poster yet. Text a name."
+    return `You follow ${count} ${count === 1 ? "case" : "cases"}: ${labels.join(", ")}.`
+  }
+  if (thought.action === "stop-all") return "stop-all"
+  if (thought.action === "stop") return thought.name ? `stop:${thought.name}` : "Text stop and a name."
+  if (thought.action === "latest") return thought.name ? `latest:${thought.name}` : "Text latest and a name."
+  if (thought.action === "follow") return thought.name ? `follow:${thought.name}` : "Text the poster name to follow it."
+  return cleanOutgoing(thought.text)
+}
+
 async function handleInbound(config: PhotonConfig, message: { id: string; text: string; phone: string; spaceId: string; agentUserId: string }) {
-  await linkPhone(message.phone, message.spaceId, message.agentUserId)
   const store = await readStore()
   const mine = (store.alerts ?? []).filter((watch) => watch.phone === message.phone)
-  const command = answerText(message.text, mine.map((watch) => watch.label))
+  const command = await interpret(message.text, mine, posterNotes(message.text, mine, store))
   let text = command
   if (command === "stop-all") {
     await updateStore((current) => {
@@ -154,10 +231,18 @@ async function handleInbound(config: PhotonConfig, message: { id: string; text: 
       text = subscribedLine({ kind: "case", label: matches[0].name })
       await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply2-${message.id}`)
       await markConfirmed(watchId, message.spaceId, message.agentUserId)
+      await linkPhone(message.phone, message.spaceId, message.agentUserId)
       return
     }
   }
   await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply2-${message.id}`)
+  await linkPhone(message.phone, message.spaceId, message.agentUserId)
+}
+
+export async function receiveText(message: { id: string; text: string; phone: string; spaceId: string; agentUserId: string }) {
+  const config = photonConfig()
+  if (!config) return
+  await handleInbound(config, message)
 }
 
 export async function drainInbox() {

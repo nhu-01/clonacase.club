@@ -123,7 +123,7 @@ function plainText(content: unknown): string {
   return ""
 }
 
-function readInbound(item: unknown, agentHandle: string): InboundText | null {
+export function inboundFrom(item: unknown, agentHandle: string): InboundText | null {
   const message = record(item)
   if (!message || message.status !== "received") return null
   const sentBy = record(message.sentBy)
@@ -158,5 +158,5 @@ export async function listInbound(config: PhotonConfig, createdSince: string) {
     config,
     `/projects/${config.project}/messages?${query.toString()}`,
   )
-  return (page.items ?? []).map((item) => readInbound(item, config.handle)).filter((item): item is InboundText => item !== null)
+  return (page.items ?? []).map((item) => inboundFrom(item, config.handle)).filter((item): item is InboundText => item !== null)
 }
