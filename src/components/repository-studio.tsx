@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useActionState } from "react"
-import { Plus, X } from "lucide-react"
+import { Plus } from "lucide-react"
 import {
   addEvidence,
   addHypothetical,
@@ -105,6 +105,9 @@ export function RepositoryStudio({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState<"closed" | "menu" | "note" | "media" | "hypothetical">("closed")
+  const [lastView, setLastView] = useState<"menu" | "note" | "media" | "hypothetical">("menu")
+  if (open !== "closed" && open !== lastView) setLastView(open)
+  const view = open === "closed" ? lastView : open
   const [wasPending, setWasPending] = useState(false)
   const [refreshTick, setRefreshTick] = useState(0)
   const [addedNote, addNote, addingNote] = useActionState(addEvidence, initial)
@@ -234,24 +237,28 @@ export function RepositoryStudio({
       ) : null}
 
       {canEdit ? (
-        <div className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3 sm:right-8 sm:bottom-8">
-          {open !== "closed" ? (
-            <div className="plus-sheet w-[min(100vw-2rem,24rem)] border border-primary/35 bg-background/95 p-4 shadow-2xl backdrop-blur-xl">
-              {open === "menu" ? (
+        <div className="fixed right-4 bottom-4 z-40 sm:right-8 sm:bottom-8">
+          <div
+            inert={open === "closed"}
+            aria-hidden={open === "closed"}
+            className={`plus-sheet absolute right-0 bottom-[4.5rem] w-[min(100vw-2rem,24rem)] border border-primary/35 bg-background/95 p-4 shadow-2xl backdrop-blur-xl ${open === "closed" ? "" : "is-open"}`}
+          >
+            <div key={view} className="plus-swap">
+              {view === "menu" ? (
                 <div className="grid gap-2">
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Add to this repository</p>
-                  <button type="button" className="py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("note")}>
+                  <p className="plus-choice font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Add to this repository</p>
+                  <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("note")}>
                     Add notes
                   </button>
-                  <button type="button" className="py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("media")}>
+                  <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("media")}>
                     Add media
                   </button>
-                  <button type="button" className="py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("hypothetical")}>
+                  <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("hypothetical")}>
                     Hypothetical timeline
                   </button>
                 </div>
               ) : null}
-              {open === "note" ? (
+              {view === "note" ? (
                 <form action={addNote} className="grid gap-3">
                   <input type="hidden" name="roomId" value={roomId} />
                   <input type="hidden" name="kind" value="lead" />
@@ -268,7 +275,7 @@ export function RepositoryStudio({
                   </Button>
                 </form>
               ) : null}
-              {open === "media" ? (
+              {view === "media" ? (
                 <form action={addMediaAction} className="grid gap-3">
                   <input type="hidden" name="roomId" value={roomId} />
                   <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Media</p>
@@ -292,7 +299,7 @@ export function RepositoryStudio({
                   </Button>
                 </form>
               ) : null}
-              {open === "hypothetical" ? (
+              {view === "hypothetical" ? (
                 <div className="grid gap-4">
                   {hypothetical.length === 0 ? (
                     <form action={seedHypothetical} className="grid gap-2">
@@ -323,16 +330,16 @@ export function RepositoryStudio({
                 </div>
               ) : null}
             </div>
-          ) : null}
+          </div>
           <button
             type="button"
             id="repo-plus"
             aria-expanded={open !== "closed"}
             aria-label={open === "closed" ? "Add to this repository" : "Close"}
             onClick={() => setOpen((value) => (value === "closed" ? "menu" : "closed"))}
-            className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-300 hover:scale-105"
+            className="relative grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-300 hover:scale-105"
           >
-            {open === "closed" ? <Plus className="size-6" /> : <X className="size-6" />}
+            <Plus className={`repo-plus-icon size-6 ${open === "closed" ? "" : "is-open"}`} />
           </button>
         </div>
       ) : null}
