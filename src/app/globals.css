@@ -498,6 +498,95 @@ html.clone-opening body > :not(.clone-veil) {
   transition-delay: 0.08s;
 }
 
+.mark {
+  color: oklch(0.67 0.18 22);
+}
+
+.mark-trace {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: mark-draw 5.6s linear infinite;
+}
+
+.mark-bloom {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: mark-bloom 5.6s linear infinite;
+}
+
+.mark-floor {
+  opacity: 0;
+  animation: mark-floor 5.6s linear infinite;
+}
+
+.mark-rider,
+.mark-halo {
+  offset-path: path("M 7 24.2 V 15.2 A 9 9 0 0 1 25 15.2");
+  offset-rotate: 0deg;
+  animation:
+    mark-ride 5.6s linear infinite,
+    mark-tip 5.6s linear infinite;
+}
+
+.mark-halo {
+  animation-name: mark-ride, mark-halo-fade;
+}
+
+.mark-clone {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-clone 5.6s linear infinite;
+}
+
+@keyframes mark-draw {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  5% { opacity: 1; }
+  42% { stroke-dashoffset: 0; opacity: 1; }
+  82% { stroke-dashoffset: 0; opacity: 1; }
+  94% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 100; opacity: 0; }
+}
+
+@keyframes mark-bloom {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  5% { opacity: 0.42; }
+  42% { stroke-dashoffset: 0; opacity: 0.42; }
+  82% { stroke-dashoffset: 0; opacity: 0.42; }
+  94% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 100; opacity: 0; }
+}
+
+@keyframes mark-ride {
+  0% { offset-distance: 0%; }
+  32% { offset-distance: 100%; }
+  100% { offset-distance: 100%; }
+}
+
+@keyframes mark-tip {
+  0% { opacity: 0; }
+  4% { opacity: 1; }
+  82% { opacity: 1; }
+  93%, 100% { opacity: 0; }
+}
+
+@keyframes mark-halo-fade {
+  0% { opacity: 0; }
+  4%, 82% { opacity: 0.55; }
+  93%, 100% { opacity: 0; }
+}
+
+@keyframes mark-floor {
+  0%, 38% { opacity: 0; }
+  50%, 82% { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes mark-clone {
+  0%, 36% { opacity: 0; transform: scale(0.2); }
+  50%, 82% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; transform: scale(0.35); }
+}
+
 .reply-in {
   animation: reply-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -535,6 +624,12 @@ html.clone-opening body > :not(.clone-veil) {
   .plus-choice,
   .repo-plus-icon,
   .reply-in,
+  .mark-trace,
+  .mark-bloom,
+  .mark-floor,
+  .mark-rider,
+  .mark-halo,
+  .mark-clone,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
@@ -551,5 +646,31 @@ html.clone-opening body > :not(.clone-veil) {
   .item-card,
   .pull-card {
     transition: none;
+  }
+
+  .mark-trace,
+  .mark-bloom {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  .mark-bloom {
+    opacity: 0.42;
+  }
+
+  .mark-floor,
+  .mark-clone {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mark-rider,
+  .mark-halo {
+    offset-distance: 100%;
+    opacity: 1;
+  }
+
+  .mark-halo {
+    opacity: 0.55;
   }
 }
