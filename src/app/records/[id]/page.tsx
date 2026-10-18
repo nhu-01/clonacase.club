@@ -48,7 +48,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         </Link>
         <span className="px-2">/</span>
         <Link href="/archive" className="hover:text-foreground">
-          Archive
+          Cases
         </Link>
       </p>
       <WashingtonDossier

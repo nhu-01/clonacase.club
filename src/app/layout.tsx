@@ -3,6 +3,7 @@ import { Fraunces, Geist_Mono, Outfit } from "next/font/google"
 import { CloneVeil } from "@/components/clone-veil"
 import { Shell } from "@/components/shell"
 import { getCurrentUser } from "@/lib/current"
+import { openPullCount } from "@/lib/store"
 import "./globals.css"
 
 const display = Fraunces({
@@ -31,6 +32,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
+  const notices = user ? await openPullCount(user.id) : 0
   return (
     <html
       lang="en"
@@ -38,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${display.variable} ${outfit.variable} ${mono.variable} dark h-full antialiased`}
     >
       <body className="min-h-full">
-        <Shell user={user} />
+        <Shell user={user} notices={notices} />
         {children}
         <CloneVeil />
       </body>

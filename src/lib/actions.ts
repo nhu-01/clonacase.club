@@ -34,6 +34,7 @@ function refresh(roomId: string, caseId?: string) {
   revalidatePath("/archive")
   revalidatePath("/rooms")
   revalidatePath("/pulls")
+  revalidatePath("/", "layout")
   revalidatePath(`/room/${roomId}`)
   revalidatePath(`/repository/${roomId}`)
   if (caseId) {

@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Rise } from "@/components/motion"
 import { washingtonRecords } from "@/lib/washington-public"
 
-export const metadata: Metadata = { title: "Archive" }
+export const metadata: Metadata = { title: "Cases" }
 
 export default function ArchivePage() {
   return (

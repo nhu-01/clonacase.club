@@ -27,7 +27,7 @@ export default async function RoomsPage() {
           <p className="mt-4 text-sm text-muted-foreground">
             No clones yet.{" "}
             <Link href="/archive" className="text-foreground underline decoration-border underline-offset-4">
-              Open the archive
+              Browse cases
             </Link>
             .
           </p>

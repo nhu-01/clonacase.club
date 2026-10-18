@@ -451,6 +451,15 @@ export async function publicRepositories(caseId: string) {
     })
 }
 
+export async function openPullCount(userId: string) {
+  try {
+    const store = await readStore()
+    return (store.pulls ?? []).filter((pull) => pull.targetOwnerId === userId && pull.status === "open").length
+  } catch {
+    return 0
+  }
+}
+
 export async function listPulls(userId: string) {
   const store = await readStore()
   const cards = (store.pulls ?? [])
