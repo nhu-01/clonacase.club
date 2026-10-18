@@ -31,7 +31,7 @@ function text(formData: FormData, key: string, max: number) {
 }
 
 function refresh(roomId: string, caseId?: string) {
-  revalidatePath("/archive")
+  revalidatePath("/cases")
   revalidatePath("/rooms")
   revalidatePath("/pulls")
   revalidatePath("/", "layout")
@@ -362,7 +362,7 @@ async function confirmLink(formData: FormData): Promise<ActionState> {
     link.confirmedBy.push(user.id)
   })
   if (error) return { error }
-  revalidatePath("/archive")
+  revalidatePath("/cases")
   revalidatePath("/rooms")
   for (const caseId of caseIds) revalidatePath(`/cases/${caseId}`)
   if (roomId) revalidatePath(`/room/${roomId}`)

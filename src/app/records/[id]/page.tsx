@@ -47,7 +47,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
           Search
         </Link>
         <span className="px-2">/</span>
-        <Link href="/archive" className="hover:text-foreground">
+        <Link href="/cases" className="hover:text-foreground">
           Cases
         </Link>
       </p>

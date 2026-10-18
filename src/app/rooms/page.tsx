@@ -26,7 +26,7 @@ export default async function RoomsPage() {
         {mine.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             No clones yet.{" "}
-            <Link href="/archive" className="text-foreground underline decoration-border underline-offset-4">
+            <Link href="/cases" className="text-foreground underline decoration-border underline-offset-4">
               Browse cases
             </Link>
             .

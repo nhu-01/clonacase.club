@@ -433,7 +433,7 @@ export function RoomDesk({
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10">
       <p className="text-sm text-muted-foreground">
-        <Link href="/archive" className="hover:text-foreground">
+        <Link href="/cases" className="hover:text-foreground">
           Cases
         </Link>
         <span className="px-2">/</span>

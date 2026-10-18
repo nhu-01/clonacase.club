@@ -59,9 +59,9 @@ export function connectionLabel(type: ConnectionType) {
 }
 
 export function safeNext(value: unknown) {
-  if (typeof value !== "string") return "/archive"
+  if (typeof value !== "string") return "/cases"
   if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/login")) {
-    return "/archive"
+    return "/cases"
   }
   return value
 }

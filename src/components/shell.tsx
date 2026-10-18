@@ -28,7 +28,7 @@ export function Shell({ user, notices = 0 }: { user: PublicUser | null; notices?
           <span className="font-heading text-lg tracking-tight lowercase">clonacase</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm text-muted-foreground sm:gap-2">
-          <Link href="/archive" className="hidden rounded-md px-2 py-1 transition-colors hover:text-foreground sm:inline">
+          <Link href="/cases" className="hidden rounded-md px-2 py-1 transition-colors hover:text-foreground sm:inline">
             Cases
           </Link>
           <Link href="/resources" className="rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2">

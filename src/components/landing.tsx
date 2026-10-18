@@ -146,7 +146,7 @@ export function Landing({ signedIn }: { signedIn: boolean }) {
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <Button render={<Link href="/archive" />} className="h-11 px-5" nativeButton={false}>
+        <Button render={<Link href="/cases" />} className="h-11 px-5" nativeButton={false}>
           Browse cases
         </Button>
         <Button
