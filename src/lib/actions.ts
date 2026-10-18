@@ -704,7 +704,15 @@ export async function addHypothetical(_prev: ActionState, formData: FormData): P
   if (blocked) return { error: blocked }
   const fields = readHypothetical(formData)
   if ("error" in fields) return { error: fields.error }
-  const event: HypotheticalEvent = { id: newId("hy"), date: fields.date, time: fields.time, title: fields.title, body: fields.body, basedOn: "" }
+  const event: HypotheticalEvent = {
+    id: newId("hy"),
+    date: fields.date,
+    time: fields.time,
+    title: fields.title,
+    body: fields.body,
+    basedOn: "",
+    createdAt: new Date().toISOString(),
+  }
   await updateStore((store) => {
     const clone = store.clones.find((entry) => entry.id === roomId)
     if (!clone) return

@@ -45,11 +45,16 @@ export function Shell({ user, notices = 0 }: { user: PublicUser | null; notices?
             </Link>
           )}
           {user ? (
+            <Link
+              href="/profile"
+              className="inline-flex max-w-28 items-center gap-1.5 rounded-md px-1 py-1 text-foreground transition-colors hover:text-primary sm:max-w-40"
+            >
+              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary" />
+              <span className="truncate">{user.name}</span>
+            </Link>
+          ) : null}
+          {user ? (
             <form action={logout} className="flex items-center">
-              <span className="inline-flex max-w-28 items-center gap-1.5 px-1 text-foreground sm:max-w-40">
-                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary" />
-                <span className="truncate">{user.name}</span>
-              </span>
               <button
                 type="submit"
                 className="rounded-md px-2 py-1 transition-colors hover:text-foreground"

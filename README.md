@@ -30,6 +30,7 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 - Draft a brief from the milestones already in the room. It lists the sourced sequence, gaps of ten days or more, leads, and inconclusive notes.
 - Share the room only after every sourced milestone names a source, and you confirm the room names no suspect.
 - From someone else’s public repository, clone a private copy tagged “Cloned from” that person, or fork it. A fork does not write onto their desk. A new note, media link, or hypothetical event is a pull request on the PRs page until they accept it. A hypothetical line stays a reading, not a finding.
+- The username in the header opens your profile. A year of squares counts private clones and new info: notes, sources, hypothetical events, and pull requests. The same actions are listed under the chart.
 
 ## Database
 

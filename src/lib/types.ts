@@ -114,6 +114,7 @@ export type HypotheticalEvent = {
   body: string
   basedOn: string
   pullId?: string
+  createdAt?: string
 }
 
 export type DeskLineage = "original" | "cloned" | "fork"
