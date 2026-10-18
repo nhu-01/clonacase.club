@@ -191,7 +191,7 @@ export async function postMessage(_prev: ActionState, formData: FormData): Promi
     })
   })
   refresh(roomId, room.caseFile.id)
-  await notifyDesk({ roomId, authorId: user.id, kind: "note", title: body, eventId: messageId })
+  await notifyDesk({ roomId, authorId: user.id, kind: "comment", title: body, eventId: messageId })
   return { ok: true }
 }
 
@@ -297,6 +297,15 @@ export async function setVisibility(_prev: ActionState, formData: FormData): Pro
     if (clone) clone.visibility = "public"
   })
   refresh(roomId, room.caseFile.id)
+  if (room.clone.visibility !== "public") {
+    await notifyDesk({
+      roomId,
+      authorId: user.id,
+      kind: "shared",
+      title: "This repository is now public",
+      eventId: `share-${roomId}-${Date.now()}`,
+    })
+  }
   return { ok: true }
 }
 
@@ -499,6 +508,7 @@ export async function updateEvidence(_prev: ActionState, formData: FormData): Pr
   const fields = readEvidence(formData)
   if ("error" in fields) return { error: fields.error }
 
+  let saved = false
   await updateStore((store) => {
     const clone = store.clones.find((item) => item.id === roomId)
     const milestone = clone?.milestones.find((item) => item.id === milestoneId && item.origin === "room")
@@ -511,9 +521,19 @@ export async function updateEvidence(_prev: ActionState, formData: FormData): Pr
     milestone.sourceUrl = fields.sourceUrl
     milestone.imageUrl = fields.imageUrl
     if (clone) clone.brief = null
+    saved = true
   })
   if (!lastWriteDurable()) return { error: "The note did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  if (saved && owned.user) {
+    await notifyDesk({
+      roomId,
+      authorId: owned.user.id,
+      kind: "note-updated",
+      title: fields.title,
+      eventId: `${milestoneId}-edit-${Date.now()}`,
+    })
+  }
   return { ok: true }
 }
 
@@ -546,6 +566,13 @@ export async function saveRepository(_prev: ActionState, formData: FormData): Pr
     if (clone) clone.note = note
   })
   refresh(roomId, owned.room.caseFile.id)
+  await notifyDesk({
+    roomId,
+    authorId: owned.user.id,
+    kind: "working-note",
+    title: note || "Working note cleared",
+    eventId: `note-${roomId}-${Date.now()}`,
+  })
   return { ok: true }
 }
 
@@ -671,6 +698,7 @@ export async function updateMedia(_prev: ActionState, formData: FormData): Promi
   if (blocked) return { error: blocked }
   const fields = readMedia(formData)
   if ("error" in fields) return { error: fields.error }
+  let saved = false
   await updateStore((store) => {
     const item = store.clones.find((entry) => entry.id === roomId)?.media?.find((entry) => entry.id === mediaId)
     if (!item) return
@@ -678,9 +706,19 @@ export async function updateMedia(_prev: ActionState, formData: FormData): Promi
     item.title = fields.title
     item.url = fields.url
     item.note = fields.note
+    saved = true
   })
   if (!lastWriteDurable()) return { error: "The media did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  if (saved && owned.user) {
+    await notifyDesk({
+      roomId,
+      authorId: owned.user.id,
+      kind: "source-updated",
+      title: fields.title,
+      eventId: `${mediaId}-edit-${Date.now()}`,
+    })
+  }
   return { ok: true }
 }
 
@@ -744,6 +782,7 @@ export async function updateHypothetical(_prev: ActionState, formData: FormData)
   if (blocked) return { error: blocked }
   const fields = readHypothetical(formData)
   if ("error" in fields) return { error: fields.error }
+  let saved = false
   await updateStore((store) => {
     const event = store.clones.find((entry) => entry.id === roomId)?.hypothetical?.find((entry) => entry.id === eventId)
     if (!event) return
@@ -751,9 +790,19 @@ export async function updateHypothetical(_prev: ActionState, formData: FormData)
     event.time = fields.time
     event.title = fields.title
     event.body = fields.body
+    saved = true
   })
   if (!lastWriteDurable()) return { error: "The hypothetical event did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  if (saved && owned.user) {
+    await notifyDesk({
+      roomId,
+      authorId: owned.user.id,
+      kind: "hypothetical-updated",
+      title: fields.title,
+      eventId: `${eventId}-edit-${Date.now()}`,
+    })
+  }
   return { ok: true }
 }
 

@@ -12,8 +12,20 @@ export function agentLine() {
 
 function cleanTitle(title: string) {
   const text = title.replace(/\s+/g, " ").trim().slice(0, 120)
-  if (!text || heldBack(text)) return "A new note"
+  if (!text || heldBack(text)) return "Details held back"
   return text
+}
+
+function updateLine(kind: string) {
+  if (kind === "media") return "New source"
+  if (kind === "hypothetical") return "New hypothetical event"
+  if (kind === "comment") return "New comment"
+  if (kind === "note-updated") return "Note updated"
+  if (kind === "source-updated") return "Source updated"
+  if (kind === "hypothetical-updated") return "Hypothetical event updated"
+  if (kind === "working-note") return "Working note updated"
+  if (kind === "shared") return "Repository shared"
+  return "New note"
 }
 
 function findCases(query: string) {
@@ -28,11 +40,13 @@ export function answerText(text: string, following: string[]) {
   const words = text.trim().replace(/\s+/g, " ")
   const lower = words.toLowerCase()
   if (!lower || /^(help|\?|hi|hello|hey)$/.test(lower)) {
-    return "clonacase. Text a name to follow that poster. list shows what you follow. stop and a name ends it. latest and a name reads the newest public note."
+    return "clonacase. Text a name to follow that poster. list shows what you follow. stop and a name ends it. latest and a name reads the newest public update."
   }
   if (lower === "latest") return "Text latest and a name."
-  if (lower === "list" || lower === "following" || lower === "mine") {
-    return following.length ? `Following ${following.join(", ")}.` : "You are not following a poster yet. Text a name."
+  if (lower === "list" || lower === "following" || lower === "mine" || /total cases|my cases|what do i follow|cases i subscribed|how many cases/.test(lower)) {
+    const count = following.length
+    if (!count) return "You are not following a poster yet. Text a name."
+    return `You follow ${count} ${count === 1 ? "case" : "cases"}: ${following.join(", ")}.`
   }
   if (lower === "stop" || lower === "stop all" || lower === "unsubscribe") return "stop-all"
   const stop = /^(?:stop|unsubscribe)\s+(.+)$/i.exec(words)
@@ -44,8 +58,8 @@ export function answerText(text: string, following: string[]) {
   return `follow:${words}`
 }
 
-async function reply(config: PhotonConfig, spaceId: string, senderId: string, text: string, key: string, parentMessageId?: string) {
-  await sendText(config, { spaceId, senderId, text, idempotencyKey: key, parentMessageId })
+async function reply(config: PhotonConfig, spaceId: string, senderId: string, text: string, key: string) {
+  await sendText(config, { spaceId, senderId, text, idempotencyKey: key })
 }
 
 async function linkPhone(phone: string, spaceId: string, agentUserId: string) {
@@ -91,15 +105,23 @@ async function latestLine(name: string) {
   if (matches.length !== 1) return matches.length ? `Which poster? ${matches.map((item) => item.name).join(", ")}.` : "No poster by that name."
   const store = await readStore()
   const rooms = store.clones.filter((clone) => clone.caseId === matches[0].id && clone.visibility === "public")
-  const notes = rooms.flatMap((room) =>
-    (room.milestones ?? [])
-      .filter((item) => item.origin === "room")
-      .map((item) => ({ title: item.title, at: item.createdAt, roomId: room.id })),
-  )
-  notes.sort((a, b) => b.at.localeCompare(a.at))
-  const note = notes[0]
-  if (!note) return `No public note on ${matches[0].name} yet.`
-  return `${matches[0].name}: ${cleanTitle(note.title)}. ${SITE}/repository/${note.roomId}`
+  const updates = rooms.flatMap((room) => {
+    const notes = (room.milestones ?? [])
+      .filter((item) => item.origin === "room" && item.createdAt)
+      .map((item) => ({ title: item.title, at: item.createdAt, roomId: room.id }))
+    const sources = (room.media ?? []).map((item) => ({ title: item.title, at: item.createdAt, roomId: room.id }))
+    const events = (room.hypothetical ?? [])
+      .filter((item) => item.createdAt)
+      .map((item) => ({ title: item.title, at: item.createdAt as string, roomId: room.id }))
+    const comments = (store.messages ?? [])
+      .filter((item) => item.cloneId === room.id)
+      .map((item) => ({ title: item.body, at: item.createdAt, roomId: room.id }))
+    return [...notes, ...sources, ...events, ...comments]
+  })
+  updates.sort((a, b) => b.at.localeCompare(a.at))
+  const update = updates[0]
+  if (!update) return `No public update on ${matches[0].name} yet.`
+  return `${matches[0].name}: ${cleanTitle(update.title)}. ${SITE}/repository/${update.roomId}`
 }
 
 async function handleInbound(config: PhotonConfig, message: { id: string; text: string; phone: string; spaceId: string; agentUserId: string }) {
@@ -129,10 +151,10 @@ async function handleInbound(config: PhotonConfig, message: { id: string; text: 
     if (matches.length !== 1) text = matches.length ? `Which poster? ${matches.map((item) => item.name).join(", ")}.` : "No poster by that name. Text the name as it appears on the poster."
     else {
       await followCase(message.phone, "", matches[0].id, matches[0].name, message.spaceId, message.agentUserId)
-      text = `Following ${matches[0].name}. A new public note on that case will text you here.`
+      text = `Following ${matches[0].name}. A public change on that case will text you here.`
     }
   }
-  await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply-${message.id}`, message.id)
+  await reply(config, message.spaceId, message.agentUserId, text, `clonacase-reply2-${message.id}`)
 }
 
 export async function drainInbox() {
@@ -253,8 +275,8 @@ export async function confirmWatch(watchId: string) {
   }
   const text =
     watch.kind === "case"
-      ? `Following ${watch.label}. A new public note on that case will text you here.`
-      : `Following the ${watch.label} repository. A new note on that desk will text you here.`
+      ? `Following ${watch.label}. A public change on that case will text you here.`
+      : `Following the ${watch.label} repository. A change on that desk will text you here.`
   try {
     await sendText(config, {
       spaceId,
@@ -307,7 +329,7 @@ export async function notifyDesk(input: { roomId: string; authorId: string; kind
   const label = file?.name ?? "a case"
   const watches = watchesForRoom(room, store.alerts ?? [])
   if (!watches.length) return
-  const noun = input.kind === "media" ? "New source" : input.kind === "hypothetical" ? "New hypothetical event" : "New note"
+  const noun = updateLine(input.kind)
   const where = room.visibility === "public" ? "a public repository" : "this repository"
   const text = `${label}: ${noun} on ${where}. ${cleanTitle(input.title)}. ${SITE}/repository/${room.id}`
   const seen = new Set<string>()
