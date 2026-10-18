@@ -384,6 +384,47 @@ html.clone-opening body > :not(.clone-veil) {
   outline-offset: 3px;
 }
 
+.resource-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  column-gap: 0.85rem;
+  align-items: start;
+  padding: 1.35rem 0 1.45rem;
+  border-bottom: 1px solid oklch(0.58 0.14 22 / 0.22);
+}
+
+.resource-row:focus-visible {
+  outline: 1px solid oklch(0.62 0.16 22 / 0.8);
+  outline-offset: 4px;
+}
+
+.resource-mark {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.resource-row:hover .resource-mark,
+.resource-row:focus-visible .resource-mark {
+  transform: translate(4px, -4px);
+}
+
+.resource-rule {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: oklch(0.62 0.16 22);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.resource-row:hover .resource-rule,
+.resource-row:focus-visible .resource-rule {
+  transform: scaleX(1);
+}
+
 .pull-highlight {
   background-color: oklch(0.58 0.16 22 / 0.22);
   box-shadow: inset 0 0 0 1px oklch(0.66 0.15 22 / 0.55);
@@ -614,7 +655,9 @@ html.clone-opening body > :not(.clone-veil) {
   .edit-swap,
   .edit-pane-inner,
   .item-card,
-  .pull-card {
+  .pull-card,
+  .resource-mark,
+  .resource-rule {
     transition: none;
   }
 
