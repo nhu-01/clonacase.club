@@ -10,9 +10,14 @@ const LINES = [
 type Pixel = {
   x: number
   y: number
-  size: number
+  w: number
+  h: number
   color: string
   phase: number
+  clipX: number
+  clipY: number
+  clipW: number
+  clipH: number
 }
 
 function smooth(value: number) {
@@ -50,7 +55,7 @@ export function PixelSlogan() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const lines = [...rootEl.querySelectorAll<HTMLElement>("[data-slogan]")]
       const fontSize = lines[0] ? Number.parseFloat(getComputedStyle(lines[0]).fontSize) || 48 : 48
-      const cell = Math.max(4, Math.round(fontSize * 0.09 * dpr))
+      const cell = Math.max(4, Math.round(fontSize * 0.11 * dpr))
       const pad = cell * 3
       const inks = lines.map((line) => {
         const range = document.createRange()
@@ -81,7 +86,7 @@ export function PixelSlogan() {
       const ctx = off.getContext("2d")
       if (!ctx) return []
       ctx.clearRect(0, 0, width, height)
-      lines.forEach((line, index) => {
+      const glyphs = lines.map((line, index) => {
         const style = getComputedStyle(line)
         const ink = inks[index]
         const text = line.textContent || ""
@@ -91,41 +96,56 @@ export function PixelSlogan() {
         if (!Number.isNaN(spacing)) ctx.letterSpacing = `${spacing * dpr}px`
         ctx.textBaseline = "alphabetic"
         const metrics = ctx.measureText(text)
-        ctx.fillText(text, (ink.left - originX) * dpr, (ink.top - originY) * dpr + metrics.fontBoundingBoxAscent)
+        const drawX = (ink.left - originX) * dpr
+        const baseline = (ink.top - originY) * dpr + metrics.fontBoundingBoxAscent
+        ctx.fillText(text, drawX, baseline)
+        return {
+          x: drawX - metrics.actualBoundingBoxLeft,
+          y: baseline - metrics.actualBoundingBoxAscent,
+          w: metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight,
+          h: metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent,
+        }
       })
 
       const data = ctx.getImageData(0, 0, width, height).data
       const pixels: Pixel[] = []
-      for (let y = 0; y < height; y += cell) {
-        for (let x = 0; x < width; x += cell) {
-          const x1 = Math.min(width, x + cell)
-          const y1 = Math.min(height, y + cell)
-          let red = 0
-          let green = 0
-          let blue = 0
-          let alpha = 0
-          let count = 0
-          const area = (x1 - x) * (y1 - y)
-          for (let sy = y; sy < y1; sy++) {
-            for (let sx = x; sx < x1; sx++) {
-              const i = (sy * width + sx) * 4
-              const sample = data[i + 3]
-              if (sample < 36) continue
-              red += data[i]
-              green += data[i + 1]
-              blue += data[i + 2]
-              alpha += sample
-              count++
+      for (const glyph of glyphs) {
+        const x0 = Math.max(0, Math.floor(glyph.x))
+        const y0 = Math.max(0, Math.floor(glyph.y))
+        const x1 = Math.min(width, Math.ceil(glyph.x + glyph.w))
+        const y1 = Math.min(height, Math.ceil(glyph.y + glyph.h))
+        for (let y = y0; y < y1; y += cell) {
+          for (let x = x0; x < x1; x += cell) {
+            const bw = Math.min(cell, x1 - x)
+            const bh = Math.min(cell, y1 - y)
+            let red = 0
+            let green = 0
+            let blue = 0
+            let count = 0
+            for (let sy = y; sy < y + bh; sy++) {
+              for (let sx = x; sx < x + bw; sx++) {
+                const i = (sy * width + sx) * 4
+                if (data[i + 3] < 48) continue
+                red += data[i]
+                green += data[i + 1]
+                blue += data[i + 2]
+                count++
+              }
             }
+            if (count < Math.max(2, bw * bh * 0.12)) continue
+            pixels.push({
+              x,
+              y,
+              w: bw,
+              h: bh,
+              color: `rgb(${(red / count) | 0}, ${(green / count) | 0}, ${(blue / count) | 0})`,
+              phase: ((x * 13 + y * 7) % 628) / 100,
+              clipX: x0,
+              clipY: y0,
+              clipW: x1 - x0,
+              clipH: y1 - y0,
+            })
           }
-          if (count === 0 || count / area < 0.16) continue
-          pixels.push({
-            x,
-            y,
-            size: cell,
-            color: `rgba(${(red / count) | 0}, ${(green / count) | 0}, ${(blue / count) | 0}, ${alpha / count / 255})`,
-            phase: ((x * 13 + y * 7) % 628) / 100,
-          })
         }
       }
       return pixels
@@ -147,19 +167,25 @@ export function PixelSlogan() {
       const tick = (now: number) => {
         if (dead) return
         const t = Math.min(1, (now - start) / dur)
-        const elapsed = now - start
+        const hop = Math.floor((now - start) / 80)
         const energy = 1 - smooth(Math.min(1, t / 0.62))
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
-        const appear = smooth(Math.min(1, t / 0.1))
         for (const pixel of pixels) {
-          const hop = Math.floor(elapsed / 68)
-          const jx = Math.round(Math.sin(hop * 1.7 + pixel.phase) * pixel.size * 1.05 * energy)
-          const jy = Math.round(Math.cos(hop * 1.3 + pixel.phase * 2) * pixel.size * 0.8 * energy)
-          ctx.globalAlpha = appear
+          const jx = Math.round(Math.sin(hop * 1.9 + pixel.phase) * pixel.w * 0.34 * energy)
+          const jy = Math.round(Math.cos(hop * 1.4 + pixel.phase * 2) * pixel.h * 0.28 * energy)
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(pixel.clipX, pixel.clipY, pixel.clipW, pixel.clipH)
+          ctx.clip()
           ctx.fillStyle = pixel.color
-          ctx.fillRect(pixel.x + jx, pixel.y + jy, pixel.size, pixel.size)
+          ctx.fillRect(pixel.x + jx, pixel.y + jy, pixel.w, pixel.h)
+          ctx.restore()
         }
-        ctx.globalAlpha = 1
+        if (energy === 0) {
+          ctx.globalCompositeOperation = "destination-in"
+          ctx.drawImage(off, 0, 0)
+          ctx.globalCompositeOperation = "source-over"
+        }
         canvasEl.style.opacity = t > 0.72 ? String(1 - (t - 0.72) / 0.28) : "1"
         if (!revealed && t >= 0.72) {
           revealed = true
