@@ -739,7 +739,10 @@ function copiedDesk(source: Clone) {
   }
 }
 
-async function takeRepository(formData: FormData, lineage: "cloned" | "fork"): Promise<ActionState> {
+async function takeRepository(
+  formData: FormData,
+  lineage: "cloned" | "fork",
+): Promise<{ roomId?: string; error?: string }> {
   const user = await getCurrentUser()
   const roomId = text(formData, "roomId", 40)
   if (!user) redirect(`/login?next=/repository/${roomId}`)
@@ -788,14 +791,14 @@ async function takeRepository(formData: FormData, lineage: "cloned" | "fork"): P
   if (error) return { error }
   if (!created || !lastWriteDurable()) return { error: "The repository did not save." }
   refresh(created, caseId)
-  redirect(`/repository/${created}`)
+  return { roomId: created }
 }
 
-export async function cloneRepository(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function cloneRepository(formData: FormData) {
   return takeRepository(formData, "cloned")
 }
 
-export async function forkRepository(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function forkRepository(formData: FormData) {
   return takeRepository(formData, "fork")
 }
 
