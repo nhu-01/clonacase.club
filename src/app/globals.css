@@ -186,7 +186,7 @@ body {
 }
 
 .slogan-in {
-  animation: slogan-in 0.45s ease both;
+  animation: slogan-in 0.55s ease both;
 }
 
 @keyframes slogan-in {

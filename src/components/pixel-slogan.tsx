@@ -7,6 +7,19 @@ const LINES = [
   { text: "Find the Trace", italic: true },
 ]
 
+type Pixel = {
+  x: number
+  y: number
+  size: number
+  color: string
+  delay: number
+}
+
+function smooth(value: number) {
+  const t = Math.min(1, Math.max(0, value))
+  return t * t * (3 - 2 * t)
+}
+
 export function PixelSlogan() {
   const root = useRef<HTMLHeadingElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -27,7 +40,6 @@ export function PixelSlogan() {
     let frame = 0
     let dead = false
     const off = document.createElement("canvas")
-    const tiny = document.createElement("canvas")
 
     const paintSource = () => {
       const box = rootEl.getBoundingClientRect()
@@ -39,7 +51,7 @@ export function PixelSlogan() {
       canvasEl.width = width
       canvasEl.height = height
       const ctx = off.getContext("2d")
-      if (!ctx) return
+      if (!ctx) return []
       ctx.clearRect(0, 0, width, height)
       const lines = [...rootEl.querySelectorAll<HTMLElement>("[data-slogan]")]
       for (const line of lines) {
@@ -52,41 +64,56 @@ export function PixelSlogan() {
         const ascent = sample.fontBoundingBoxAscent || Number.parseFloat(style.fontSize) * 0.78
         ctx.fillText(line.textContent || "", (rect.left - box.left) * dpr, (rect.top - box.top) * dpr + ascent)
       }
-    }
 
-    const draw = (block: number) => {
-      const ctx = canvasEl.getContext("2d")
-      if (!ctx) return
-      const sw = Math.max(1, Math.round(canvasEl.width / block))
-      const sh = Math.max(1, Math.round(canvasEl.height / block))
-      tiny.width = sw
-      tiny.height = sh
-      const pixel = tiny.getContext("2d")
-      if (!pixel) return
-      pixel.imageSmoothingEnabled = false
-      pixel.clearRect(0, 0, sw, sh)
-      pixel.drawImage(off, 0, 0, sw, sh)
-      ctx.imageSmoothingEnabled = false
-      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
-      ctx.drawImage(tiny, 0, 0, canvasEl.width, canvasEl.height)
+      const cell = Math.max(2, Math.round(3.5 * dpr))
+      const data = ctx.getImageData(0, 0, width, height).data
+      const pixels: Pixel[] = []
+      for (let y = 0; y < height; y += cell) {
+        for (let x = 0; x < width; x += cell) {
+          const sx = Math.min(width - 1, x + (cell >> 1))
+          const sy = Math.min(height - 1, y + (cell >> 1))
+          const i = (sy * width + sx) * 4
+          const alpha = data[i + 3]
+          if (alpha < 48) continue
+          const jitter = ((x * 13 + y * 7) % 17) / 17
+          pixels.push({
+            x,
+            y,
+            size: cell,
+            color: `rgba(${data[i]}, ${data[i + 1]}, ${data[i + 2]}, ${alpha / 255})`,
+            delay: (x / width) * 0.42 + jitter * 0.28,
+          })
+        }
+      }
+      return pixels
     }
 
     const run = async () => {
       await document.fonts.ready
       if (dead) return
-      paintSource()
+      const pixels = paintSource()
+      const ctx = canvasEl.getContext("2d")
+      if (!ctx) return
       const start = performance.now()
-      const dur = 1500
-      const steps = [22, 16, 11, 7, 4, 2, 1]
+      const dur = 1700
+      let revealed = false
       const tick = (now: number) => {
         if (dead) return
         const t = Math.min(1, (now - start) / dur)
-        const eased = t < 0.08 ? 0 : Math.min(1, (t - 0.08) / 0.74)
-        const curve = 1 - (1 - eased) ** 3
-        const block = steps[Math.min(steps.length - 1, Math.floor(curve * steps.length))]
-        draw(block)
-        canvasEl.style.opacity = t > 0.84 ? String(1 - (t - 0.84) / 0.16) : "1"
-        if (t >= 0.82) setShown(true)
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
+        for (const pixel of pixels) {
+          const alpha = smooth((t - pixel.delay) / 0.38)
+          if (alpha <= 0) continue
+          ctx.globalAlpha = alpha
+          ctx.fillStyle = pixel.color
+          ctx.fillRect(pixel.x, pixel.y, pixel.size, pixel.size)
+        }
+        ctx.globalAlpha = 1
+        canvasEl.style.opacity = t > 0.72 ? String(1 - (t - 0.72) / 0.28) : "1"
+        if (!revealed && t >= 0.7) {
+          revealed = true
+          setShown(true)
+        }
         if (t < 1) frame = requestAnimationFrame(tick)
         else setLive(false)
       }
