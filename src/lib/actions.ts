@@ -17,6 +17,8 @@ import {
   readStore,
   updateStore,
 } from "@/lib/store"
+import { confirmWatch, forgetWatch, notifyDesk, rememberWatch } from "@/lib/desk-agent"
+import { phoneHandle } from "@/lib/photon"
 import { washingtonById } from "@/lib/washington-public"
 import type { ActionState, Clone, ConnectionType, HypotheticalEvent, MediaKind, Milestone, MilestoneKind, PullKind, RepoMedia } from "@/lib/types"
 
@@ -477,6 +479,7 @@ export async function addEvidence(_prev: ActionState, formData: FormData): Promi
   })
   if (!lastWriteDurable()) return { error: "The note did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  await notifyDesk({ roomId, authorId: owned.user.id, kind: "note", title: fields.title, eventId: milestone.id })
   return { ok: true }
 }
 
@@ -636,6 +639,7 @@ export async function addMedia(_prev: ActionState, formData: FormData): Promise<
   })
   if (!lastWriteDurable()) return { error: "The media did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  await notifyDesk({ roomId, authorId: owned.user.id, kind: "media", title: fields.title, eventId: item.id })
   return { ok: true }
 }
 
@@ -721,6 +725,7 @@ export async function addHypothetical(_prev: ActionState, formData: FormData): P
   })
   if (!lastWriteDurable()) return { error: "The hypothetical event did not save." }
   refresh(roomId, owned.room.caseFile.id)
+  await notifyDesk({ roomId, authorId: owned.user.id, kind: "hypothetical", title: fields.title, eventId: event.id })
   return { ok: true }
 }
 
@@ -958,6 +963,10 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
   let caseId = ""
   let targetId = ""
   let sourceId = ""
+  let alertTitle = ""
+  let alertKind = ""
+  let alertAuthor = ""
+  let alertEvent = ""
   await updateStore((store) => {
     const pull = (store.pulls ?? []).find((item) => item.id === pullId)
     if (!pull || pull.targetOwnerId !== user.id) {
@@ -1017,10 +1026,17 @@ export async function acceptPull(_prev: ActionState, formData: FormData): Promis
     caseId = pull.caseId
     targetId = target.id
     sourceId = pull.sourceRoomId
+    alertTitle = pull.title
+    alertKind = pull.kind
+    alertAuthor = pull.authorId
+    alertEvent = pull.id
   })
   if (error) return { error }
   if (!lastWriteDurable()) return { error: "The pull request did not save." }
-  if (targetId) refresh(targetId, caseId)
+  if (targetId) {
+    refresh(targetId, caseId)
+    await notifyDesk({ roomId: targetId, authorId: alertAuthor, kind: alertKind, title: alertTitle, eventId: alertEvent })
+  }
   if (sourceId) revalidatePath(`/repository/${sourceId}`)
   return { ok: true }
 }
@@ -1079,4 +1095,41 @@ export async function deleteThread(formData: FormData) {
     store.threads = store.threads.filter((post) => !drop.has(post.id))
   })
   revalidatePath(`/records/${caseId}`)
+}
+
+export async function followByText(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in to follow by text." }
+  const kind = text(formData, "kind", 20)
+  const targetId = text(formData, "targetId", 80)
+  const phone = phoneHandle(text(formData, "phone", 80))
+  if (kind !== "case" && kind !== "repository") return { error: "Choose a case or a repository." }
+  if (!phone) return { error: "Use a phone number, with the country code, or an iMessage email." }
+  let label = ""
+  if (kind === "case") {
+    const record = washingtonById(targetId)
+    if (!record) return { error: "That poster is not among the cases." }
+    label = record.name
+  } else {
+    const room = await getRoom(targetId, user.id)
+    if (!room || room.locked) return { error: "That repository is not open." }
+    label = room.caseFile.name
+  }
+  const watchId = await rememberWatch({ phone, userId: user.id, kind, targetId, label })
+  if (!lastWriteDurable()) return { error: "The alert did not save." }
+  const note = await confirmWatch(watchId)
+  revalidatePath(kind === "case" ? `/records/${targetId}` : `/repository/${targetId}`)
+  return { ok: true, note }
+}
+
+export async function stopText(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in to stop texts." }
+  const kind = text(formData, "kind", 20)
+  const targetId = text(formData, "targetId", 80)
+  if (kind !== "case" && kind !== "repository") return { error: "Choose a case or a repository." }
+  await forgetWatch(user.id, kind, targetId)
+  if (!lastWriteDurable()) return { error: "The alert did not stop." }
+  revalidatePath(kind === "case" ? `/records/${targetId}` : `/repository/${targetId}`)
+  return { ok: true, note: "Texts for this one have stopped." }
 }

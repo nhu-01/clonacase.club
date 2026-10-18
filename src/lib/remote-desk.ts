@@ -17,6 +17,8 @@ function toStore(record: DeskRecord): Store {
     messages: record.messages ?? [],
     threads: record.threads ?? [],
     pulls: record.pulls ?? [],
+    alerts: record.alerts ?? [],
+    inbox: record.inbox?.handled ? record.inbox : { handled: [] },
   }
 }
 
@@ -63,7 +65,17 @@ export async function loadRemoteDesk(seed: (store: Store) => boolean): Promise<S
   if (!Array.isArray(list)) throw new Error("The shared desk did not answer.")
 
   if (list.length === 0) {
-    const store: Store = { version: 1, users: [], clones: [], connections: [], messages: [], threads: [], pulls: [] }
+    const store: Store = {
+      version: 1,
+      users: [],
+      clones: [],
+      connections: [],
+      messages: [],
+      threads: [],
+      pulls: [],
+      alerts: [],
+      inbox: { handled: [] },
+    }
     seed(store)
     const created = await request<DeskRecord>(ENDPOINT, {
       method: "POST",

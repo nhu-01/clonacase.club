@@ -34,6 +34,10 @@ const ADDRESS =
 const FAMILY =
   /\b(mother|father|mom|dad|brother|sister|wife|husband|son|daughter|girlfriend|boyfriend|ex-wife|ex-husband|ex)\b/i
 
+export function heldBack(text: string) {
+  return SUSPECT.test(text) || ADDRESS.test(text) || FAMILY.test(text)
+}
+
 function secret() {
   return process.env.SESSION_SECRET || "hearth-dev-session-secret"
 }

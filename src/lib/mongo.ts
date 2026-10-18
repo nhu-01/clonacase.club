@@ -2,7 +2,7 @@ import { readFile } from "fs/promises"
 import path from "path"
 import { MongoClient, type Db } from "mongodb"
 import { posterBeats, type PosterBeat } from "@/lib/poster-beats"
-import type { Connection, Message, PullRequest, Store, ThreadPost, User } from "@/lib/types"
+import type { AlertWatch, Connection, Message, PullRequest, Store, ThreadPost, User } from "@/lib/types"
 import { washingtonRecords } from "@/lib/washington-public"
 
 const FILE = path.join(process.cwd(), "data", "store.json")
@@ -101,6 +101,8 @@ async function ensure(db: Db) {
       messages: parsed.messages ?? [],
       threads: parsed.threads ?? [],
       pulls: parsed.pulls ?? [],
+      alerts: parsed.alerts ?? [],
+      inbox: parsed.inbox ?? { handled: [] },
     }
     if (!store.clones.length && !store.threads.length && !store.connections.length && !store.users.length) return
     await writeAll(db, store)
@@ -143,17 +145,21 @@ async function writeAll(db: Db, store: Store) {
   await replace(db, "threads", store.threads)
   await replace(db, "connections", store.connections)
   await replace(db, "pulls", store.pulls ?? [])
+  await replace(db, "alerts", store.alerts ?? [])
+  await replace(db, "inbox", [{ id: "cursor", handled: store.inbox?.handled ?? [] }])
 }
 
 export async function loadDesk(): Promise<Store> {
   const db = await ready()
-  const [volunteers, clones, messages, threads, connections, pulls] = await Promise.all([
+  const [volunteers, clones, messages, threads, connections, pulls, alerts, inbox] = await Promise.all([
     db.collection<User>("volunteers").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Store["clones"][number]>("repositories").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Message>("messages").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<ThreadPost>("threads").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Connection>("connections").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<PullRequest>("pulls").find({}, { projection: { _id: 0 } }).toArray(),
+    db.collection<AlertWatch>("alerts").find({}, { projection: { _id: 0 } }).toArray(),
+    db.collection<{ id: string; handled: string[] }>("inbox").find({}, { projection: { _id: 0 } }).toArray(),
   ])
   return {
     version: 1,
@@ -179,6 +185,8 @@ export async function loadDesk(): Promise<Store> {
     messages,
     threads,
     pulls,
+    alerts,
+    inbox: { handled: inbox.find((item) => item.id === "cursor")?.handled ?? inbox[0]?.handled ?? [] },
   }
 }
 

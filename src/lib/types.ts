@@ -165,6 +165,18 @@ export type ThreadPost = {
   parentId?: string
 }
 
+export type AlertWatch = {
+  id: string
+  phone: string
+  userId: string
+  kind: "case" | "repository"
+  targetId: string
+  label: string
+  createdAt: string
+  spaceId: string
+  agentUserId: string
+}
+
 export type Store = {
   version: number
   users: User[]
@@ -173,11 +185,14 @@ export type Store = {
   messages: Message[]
   threads: ThreadPost[]
   pulls: PullRequest[]
+  alerts: AlertWatch[]
+  inbox: { handled: string[] }
 }
 
 export type ActionState = {
   error?: string
   ok?: boolean
+  note?: string
   review?: {
     status: "suggest" | "disqualify"
     quote: string

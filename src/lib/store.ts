@@ -43,7 +43,7 @@ function publicUser(user: User): PublicUser {
 }
 
 function blankStore(): Store {
-  return { version: VERSION, users: [], clones: [], connections: [], messages: [], threads: [], pulls: [] }
+  return { version: VERSION, users: [], clones: [], connections: [], messages: [], threads: [], pulls: [], alerts: [], inbox: { handled: [] } }
 }
 
 function seedStore(store: Store) {
@@ -70,6 +70,14 @@ function seedStore(store: Store) {
   }
   if (!store.pulls) {
     store.pulls = []
+    changed = true
+  }
+  if (!store.alerts) {
+    store.alerts = []
+    changed = true
+  }
+  if (!store.inbox?.handled) {
+    store.inbox = { handled: [] }
     changed = true
   }
   for (const clone of store.clones) {

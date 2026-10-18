@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation"
 import { CaseDiscussion } from "@/components/case-discussion"
 import { CloneCaseButton } from "@/components/clone-case"
 import { Rise } from "@/components/motion"
+import { TextAlert } from "@/components/text-alert"
+import { agentLine, watchFor } from "@/lib/desk-agent"
 import { WashingtonDossier } from "@/components/washington-dossier"
 import { getCurrentUser } from "@/lib/current"
 import { formatDay } from "@/lib/format"
@@ -39,6 +41,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   }
   const events = await posterTimeline(record.id)
   const fromMongo = Boolean(events && events.length > 0)
+  const watch = await watchFor(user.id, "case", record.id)
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-12">
@@ -56,6 +59,13 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         events={fromMongo ? events ?? undefined : undefined}
         fromMongo={fromMongo}
         action={<CloneCaseButton caseId={record.id} existingId={mine?.id} />}
+      />
+      <TextAlert
+        kind="case"
+        targetId={record.id}
+        line={agentLine()}
+        phone={watch?.phone ?? ""}
+        watching={Boolean(watch)}
       />
 
       <section className="mt-14">

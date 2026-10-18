@@ -30,6 +30,21 @@ Sign in with an email and password, or choose a username on a first visit. Email
 - From someone else’s public repository, clone a private copy tagged “Cloned from” that person, or fork it. A fork does not write onto their desk. A new note, media link, or hypothetical event is a pull request on the PRs page until they accept it. A hypothetical line stays a reading, not a finding.
 - The username in the header opens your profile. A year of squares counts private clones and new info: notes, sources, hypothetical events, and pull requests. The same actions are listed under the chart.
 
+## Text alerts
+
+Photon 2.0 can text someone who follows a case or a repository. This uses the beta API at `https://api.photon.codes/v1`, not the older Spectrum SDK. In the [Photon beta dashboard](https://photon.codes/docs/beta/get-started/project), create a project, an API key with `project:read` and `project:write`, and an iMessage shared line. Put these in the environment:
+
+```bash
+PHOTON_API_KEY=
+PHOTON_PROJECT_ID=
+PHOTON_AGENT_HANDLE=
+PHOTON_PLATFORM=imessage
+```
+
+`PHOTON_AGENT_HANDLE` is the number Photon assigned. A person has to text that number first. After that, a new public note, source, or hypothetical event on a case they follow is sent in the same conversation. A repository follow texts that desk even when it is still private, only to the person who followed it.
+
+The agent also answers on that line: a poster name follows it, `list` shows follows, `stop` and a name ends one, and `latest` and a name reads the newest public note. `/api/photon/inbox` reads new texts. On Vercel it runs every five minutes. Set `CRON_SECRET` so only that cron can call it.
+
 ## Database
 
 clonacase stores the timeline in MongoDB when `MONGODB_URI` connects. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. Pull requests are in `pulls`. If that database refuses the connection, the same desk is kept in a private Vercel Blob file instead, so a clone still saves. Emails and passwords are not fields in any document.
