@@ -3,10 +3,11 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { RepositoryArrive } from "@/components/clone-veil"
 import { RepositoryControls, RepositoryStudio } from "@/components/repository-studio"
+import { RepositoryTake } from "@/components/repository-take"
 import { WashingtonDossier } from "@/components/washington-dossier"
 import { getCurrentUser } from "@/lib/current"
 import { posterTimeline } from "@/lib/mongo"
-import { getRoom } from "@/lib/store"
+import { getRoom, listPulls, takesFor } from "@/lib/store"
 import { washingtonById } from "@/lib/washington-public"
 
 export async function generateMetadata({
@@ -40,6 +41,11 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
   const events = record ? await posterTimeline(record.id) : null
   const fromMongo = Boolean(events && events.length > 0)
   const owner = room.clone.ownerId === user.id
+  const lineage = room.clone.lineage
+  const takes = owner ? { cloneId: null, forkId: null } : await takesFor(user.id, room.clone.id)
+  const { sent, received } = await listPulls(user.id)
+  const incoming = received.filter((pull) => pull.targetRoomId === room.clone.id && pull.status === "open")
+  const proposals = sent.filter((pull) => pull.sourceRoomId === room.clone.id)
   const notes = room.milestones
     .filter((item) => item.origin === "room")
     .map((item) => ({ id: item.id, date: item.date, title: item.title, body: item.body }))
@@ -56,21 +62,80 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
           Public poster
         </Link>
       </p>
+      {lineage === "cloned" || lineage === "fork" ? (
+        <p className="mt-6 border border-primary/30 bg-card/40 px-4 py-3 text-sm leading-6">
+          <span className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
+            {lineage === "cloned" ? "Cloned" : "Fork"}
+          </span>
+          <span className="mt-1 block text-muted-foreground">
+            {lineage === "cloned"
+              ? `Cloned from ${room.clone.sourceOwnerName}. This copy is private.`
+              : `Forked from ${room.clone.sourceOwnerName}. A new note, media item, or hypothetical event is a pull request. It is not on their desk until they accept it.`}
+          </span>
+          {room.clone.sourceRoomId ? (
+            <Link href={`/repository/${room.clone.sourceRoomId}`} className="mt-2 inline-block text-xs text-foreground underline decoration-primary/40 underline-offset-4">
+              Open their repository
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
       {record ? (
         <WashingtonDossier
           record={record}
           events={fromMongo ? events ?? undefined : undefined}
           fromMongo={fromMongo}
-          action={owner ? <RepositoryControls roomId={room.clone.id} visibility={room.clone.visibility} /> : null}
+          action={
+            owner ? (
+              <RepositoryControls
+                roomId={room.clone.id}
+                visibility={room.clone.visibility}
+                shareable={lineage !== "fork"}
+              />
+            ) : (
+              <RepositoryTake
+                roomId={room.clone.id}
+                ownerName={room.clone.ownerName}
+                cloneId={takes.cloneId}
+                forkId={takes.forkId}
+              />
+            )
+          }
         />
       ) : (
         <header className="mt-8">
           <h1 className="font-heading text-5xl font-light">{room.caseFile.name}</h1>
         </header>
       )}
+      {owner && incoming.length > 0 ? (
+        <p className="mt-6 text-sm">
+          <Link href="/pulls" className="text-primary underline decoration-primary/40 underline-offset-4">
+            {incoming.length} open pull {incoming.length === 1 ? "request" : "requests"}
+          </Link>
+          <span className="text-muted-foreground"> waiting on this desk.</span>
+        </p>
+      ) : null}
+      {lineage === "fork" && proposals.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="font-heading text-3xl font-light">Pull requests from this fork</h2>
+          <ul className="mt-4 divide-y divide-primary/20 border-y border-primary/25">
+            {proposals.map((pull) => (
+              <li key={pull.id} className="py-3">
+                <p className="font-mono text-[10px] tracking-[0.16em] text-primary uppercase">
+                  {pull.status} · {pull.kind}
+                </p>
+                <p className="mt-1 font-heading text-xl font-light">{pull.title}</p>
+              </li>
+            ))}
+          </ul>
+          <Link href="/pulls" className="mt-3 inline-block text-xs text-muted-foreground underline decoration-primary/30 underline-offset-4">
+            All pull requests
+          </Link>
+        </section>
+      ) : null}
       <RepositoryStudio
         roomId={room.clone.id}
-        canEdit={owner}
+        canEdit={owner && lineage !== "fork"}
+        propose={owner && lineage === "fork"}
         notes={notes}
         media={room.clone.media}
         hypothetical={room.clone.hypothetical}

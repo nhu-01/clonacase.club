@@ -34,6 +34,11 @@ export function Shell({ user }: { user: PublicUser | null }) {
             Resources
           </Link>
           {user ? (
+            <Link href="/pulls" className="rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2">
+              PRs
+            </Link>
+          ) : null}
+          {user ? (
             <Link href="/rooms" className="rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2">
               Repository
             </Link>

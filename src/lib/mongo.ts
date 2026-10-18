@@ -2,7 +2,7 @@ import { readFile } from "fs/promises"
 import path from "path"
 import { MongoClient, type Db } from "mongodb"
 import { posterBeats, type PosterBeat } from "@/lib/poster-beats"
-import type { Connection, Message, Store, ThreadPost, User } from "@/lib/types"
+import type { Connection, Message, PullRequest, Store, ThreadPost, User } from "@/lib/types"
 import { washingtonRecords } from "@/lib/washington-public"
 
 const FILE = path.join(process.cwd(), "data", "store.json")
@@ -59,6 +59,8 @@ async function ensure(db: Db) {
     db.collection("repositories").createIndex({ id: 1 }, { unique: true }),
     db.collection("repositories").createIndex({ ownerId: 1, caseId: 1 }),
     db.collection("threads").createIndex({ caseId: 1, createdAt: 1 }),
+    db.collection("pulls").createIndex({ authorId: 1, createdAt: -1 }),
+    db.collection("pulls").createIndex({ targetOwnerId: 1, createdAt: -1 }),
     db.collection("posterEvents").createIndex({ caseId: 1, sort: 1, kind: 1 }, { unique: true }),
   ])
 
@@ -98,6 +100,7 @@ async function ensure(db: Db) {
       connections: parsed.connections ?? [],
       messages: parsed.messages ?? [],
       threads: parsed.threads ?? [],
+      pulls: parsed.pulls ?? [],
     }
     if (!store.clones.length && !store.threads.length && !store.connections.length && !store.users.length) return
     await writeAll(db, store)
@@ -131,21 +134,26 @@ async function writeAll(db: Db, store: Store) {
       hypothetical: clone.hypothetical ?? [],
       brief: clone.brief,
       note: clone.note ?? "",
+      lineage: clone.lineage ?? "original",
+      sourceRoomId: clone.sourceRoomId ?? "",
+      sourceOwnerName: clone.sourceOwnerName ?? "",
     })),
   )
   await replace(db, "messages", store.messages)
   await replace(db, "threads", store.threads)
   await replace(db, "connections", store.connections)
+  await replace(db, "pulls", store.pulls ?? [])
 }
 
 export async function loadDesk(): Promise<Store> {
   const db = await ready()
-  const [volunteers, clones, messages, threads, connections] = await Promise.all([
+  const [volunteers, clones, messages, threads, connections, pulls] = await Promise.all([
     db.collection<User>("volunteers").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Store["clones"][number]>("repositories").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Message>("messages").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<ThreadPost>("threads").find({}, { projection: { _id: 0 } }).toArray(),
     db.collection<Connection>("connections").find({}, { projection: { _id: 0 } }).toArray(),
+    db.collection<PullRequest>("pulls").find({}, { projection: { _id: 0 } }).toArray(),
   ])
   return {
     version: 1,
@@ -163,10 +171,14 @@ export async function loadDesk(): Promise<Store> {
       hypothetical: clone.hypothetical ?? [],
       note: clone.note ?? "",
       brief: clone.brief ?? null,
+      lineage: clone.lineage ?? "original",
+      sourceRoomId: clone.sourceRoomId ?? "",
+      sourceOwnerName: clone.sourceOwnerName ?? "",
     })),
     connections,
     messages,
     threads,
+    pulls,
   }
 }
 

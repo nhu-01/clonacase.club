@@ -39,9 +39,11 @@ export default async function RoomsPage() {
                   <Link href={`/repository/${room.id}`} className="min-w-0">
                     <span className="block font-heading text-3xl font-light">{room.caseName}</span>
                     <span className="mt-1 block text-sm text-muted-foreground">
+                      {room.lineage === "cloned" ? "Cloned · " : room.lineage === "fork" ? "Fork · " : ""}
                       {room.city} · {room.milestoneCount} notes · {room.mediaCount} media
                       {room.hypotheticalCount ? ` · hypothetical line` : ""} · opened {formatDay(room.updatedLabel)}
                     </span>
+                    {room.note ? <span className="mt-1 block text-sm text-foreground/80">{room.note}</span> : null}
                   </Link>
                   <span className="flex items-center gap-4 sm:shrink-0">
                     <span className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{room.visibility}</span>

@@ -29,10 +29,11 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 - Link another file. The line on the map stays unconfirmed until a different volunteer agrees.
 - Draft a brief from the milestones already in the room. It lists the sourced sequence, gaps of ten days or more, leads, and inconclusive notes.
 - Share the room only after every sourced milestone names a source, and you confirm the room names no suspect.
+- From someone else’s public repository, clone a private copy tagged “Cloned from” that person, or fork it. A fork does not write onto their desk. A new note, media link, or hypothetical event is a pull request on the PRs page until they accept it. A hypothetical line stays a reading, not a finding.
 
 ## Database
 
-clonacase stores the timeline in MongoDB when `MONGODB_URI` connects. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. If that database refuses the connection, the same desk is kept in a private Vercel Blob file instead, so a clone still saves. Emails and passwords are not fields in any document.
+clonacase stores the timeline in MongoDB when `MONGODB_URI` connects. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. Pull requests are in `pulls`. If that database refuses the connection, the same desk is kept in a private Vercel Blob file instead, so a clone still saves. Emails and passwords are not fields in any document.
 
 Set `MONGODB_URI` to a MongoDB connection string. Locally that is:
 

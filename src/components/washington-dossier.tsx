@@ -59,7 +59,7 @@ export function WashingtonDossier({
     <article id="public-dossier" className="mt-8 border border-primary/35 bg-card/50">
       <header className="rise border-b border-primary/25 px-5 py-6 sm:px-7">
         <p className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">Washington public record</p>
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="mt-3 flex flex-col items-start gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <h2 className="font-heading text-4xl leading-none font-light tracking-tight sm:text-5xl">{record.name}</h2>
           {action}
         </div>

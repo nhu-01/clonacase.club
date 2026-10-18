@@ -14,6 +14,7 @@ import {
   deleteRepository,
   seedHypothetical,
   setVisibility,
+  submitPull,
   updateEvidence,
   updateHypothetical,
   updateMedia,
@@ -255,13 +256,16 @@ function HypotheticalItem({ roomId, event }: { roomId: string; event: Hypothetic
 export function RepositoryControls({
   roomId,
   visibility,
+  shareable = true,
 }: {
   roomId: string
   visibility: "private" | "public"
+  shareable?: boolean
 }) {
   const [shared, share, sharing] = useActionState(setVisibility, initial)
   return (
     <div className="flex flex-col items-end gap-2">
+      {shareable ? (
       <form action={share} className="flex flex-col items-end gap-2">
         <input type="hidden" name="roomId" value={roomId} />
         <input type="hidden" name="visibility" value={visibility === "public" ? "private" : "public"} />
@@ -275,6 +279,9 @@ export function RepositoryControls({
           {sharing ? "Saving…" : visibility === "private" ? "Make public" : "Make private"}
         </Button>
       </form>
+      ) : (
+        <p className="max-w-52 text-right text-xs leading-5 text-muted-foreground">A fork stays private. New items go out as pull requests.</p>
+      )}
       <form action={deleteRepository} className="flex items-center gap-2">
         <input type="hidden" name="roomId" value={roomId} />
         <input type="hidden" name="confirm" value="yes" />
@@ -287,15 +294,26 @@ export function RepositoryControls({
   )
 }
 
+function SuspectCheck({ id }: { id: string }) {
+  return (
+    <label htmlFor={id} className="flex items-start gap-2 text-left text-xs leading-5 text-muted-foreground">
+      <input id={id} type="checkbox" name="acknowledge" value="yes" required className="mt-0.5" />
+      These notes name no suspect.
+    </label>
+  )
+}
+
 export function RepositoryStudio({
   roomId,
   canEdit,
+  propose = false,
   notes,
   media,
   hypothetical,
 }: {
   roomId: string
   canEdit: boolean
+  propose?: boolean
   notes: Note[]
   media: RepoMedia[]
   hypothetical: HypotheticalEvent[]
@@ -307,9 +325,9 @@ export function RepositoryStudio({
   const view = open === "closed" ? lastView : open
   const [wasPending, setWasPending] = useState(false)
   const [refreshTick, setRefreshTick] = useState(0)
-  const [addedNote, addNote, addingNote] = useActionState(addEvidence, initial)
-  const [addedMedia, addMediaAction, addingMedia] = useActionState(addMedia, initial)
-  const [addedEvent, addEvent, addingEvent] = useActionState(addHypothetical, initial)
+  const [addedNote, addNote, addingNote] = useActionState(propose ? submitPull : addEvidence, initial)
+  const [addedMedia, addMediaAction, addingMedia] = useActionState(propose ? submitPull : addMedia, initial)
+  const [addedEvent, addEvent, addingEvent] = useActionState(propose ? submitPull : addHypothetical, initial)
   const saved = Boolean(addedNote.ok || addedMedia.ok || addedEvent.ok)
   const pending = addingNote || addingMedia || addingEvent
 
@@ -418,7 +436,7 @@ export function RepositoryStudio({
         </section>
       ) : null}
 
-      {canEdit ? (
+      {canEdit || propose ? (
         <div className="fixed right-4 bottom-4 z-40 sm:right-8 sm:bottom-8">
           <div
             inert={open === "closed"}
@@ -428,15 +446,22 @@ export function RepositoryStudio({
             <div key={view} className="plus-swap">
               {view === "menu" ? (
                 <div className="grid gap-2">
-                  <p className="plus-choice font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Add to this repository</p>
+                  <p className="plus-choice font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
+                    {propose ? "Send a pull request" : "Add to this repository"}
+                  </p>
+                  {propose ? (
+                    <p className="plus-choice text-sm leading-5 text-muted-foreground">
+                      It goes to the original desk. Nothing is added there until they accept it. A hypothetical line is a reading, not a finding.
+                    </p>
+                  ) : null}
                   <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("note")}>
-                    Add notes
+                    {propose ? "Propose a note" : "Add notes"}
                   </button>
                   <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("media")}>
-                    Add media
+                    {propose ? "Propose media" : "Add media"}
                   </button>
                   <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("hypothetical")}>
-                    Hypothetical timeline
+                    {propose ? "Propose a hypothetical event" : "Hypothetical timeline"}
                   </button>
                 </div>
               ) : null}
@@ -444,23 +469,26 @@ export function RepositoryStudio({
                 <form action={addNote} className="grid gap-3">
                   <input type="hidden" name="roomId" value={roomId} />
                   <input type="hidden" name="kind" value="lead" />
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Note</p>
+                  {propose ? <input type="hidden" name="pull" value="note" /> : null}
+                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{propose ? "Note for review" : "Note"}</p>
                   <Label htmlFor="note-date">Date</Label>
                   <Input id="note-date" name="date" type="date" required className="h-10" />
                   <Label htmlFor="note-title">Title</Label>
                   <Input id="note-title" name="title" required minLength={3} className="h-10" />
                   <Label htmlFor="note-body">Note</Label>
                   <Textarea id="note-body" name="body" />
+                  {propose ? <SuspectCheck id="note-ack" /> : null}
                   {addedNote.error ? <p className="text-sm text-destructive">{addedNote.error}</p> : null}
                   <Button type="submit" disabled={addingNote} className="h-10">
-                    {addingNote ? "Saving…" : "Save note"}
+                    {addingNote ? "Saving…" : propose ? "Submit pull request" : "Save note"}
                   </Button>
                 </form>
               ) : null}
               {view === "media" ? (
                 <form action={addMediaAction} className="grid gap-3">
                   <input type="hidden" name="roomId" value={roomId} />
-                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Media</p>
+                  {propose ? <input type="hidden" name="pull" value="media" /> : null}
+                  <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">{propose ? "Media for review" : "Media"}</p>
                   <Label htmlFor="media-kind">Kind</Label>
                   <select id="media-kind" name="kind" defaultValue="article" className="h-10 border border-input bg-transparent px-2 text-sm">
                     {mediaKinds.map((kind) => (
@@ -475,15 +503,16 @@ export function RepositoryStudio({
                   <Input id="media-url" name="url" required placeholder="https://" className="h-10" />
                   <Label htmlFor="media-note">Note</Label>
                   <Textarea id="media-note" name="note" />
+                  {propose ? <SuspectCheck id="media-ack" /> : null}
                   {addedMedia.error ? <p className="text-sm text-destructive">{addedMedia.error}</p> : null}
                   <Button type="submit" disabled={addingMedia} className="h-10">
-                    {addingMedia ? "Saving…" : "Save media"}
+                    {addingMedia ? "Saving…" : propose ? "Submit pull request" : "Save media"}
                   </Button>
                 </form>
               ) : null}
               {view === "hypothetical" ? (
                 <div className="grid gap-4">
-                  {hypothetical.length === 0 ? (
+                  {hypothetical.length === 0 && !propose ? (
                     <form action={seedHypothetical} className="grid gap-2">
                       <input type="hidden" name="roomId" value={roomId} />
                       <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">From the poster</p>
@@ -497,16 +526,20 @@ export function RepositoryStudio({
                   ) : null}
                   <form action={addEvent} className="grid gap-3">
                     <input type="hidden" name="roomId" value={roomId} />
-                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Hypothetical event</p>
+                    {propose ? <input type="hidden" name="pull" value="hypothetical" /> : null}
+                    <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
+                      {propose ? "Hypothetical event for review" : "Hypothetical event"}
+                    </p>
                     <Label htmlFor="hy-date">Date</Label>
                     <Input id="hy-date" name="date" type="date" required className="h-10" />
                     <Label htmlFor="hy-title">Title</Label>
                     <Input id="hy-title" name="title" required minLength={3} className="h-10" />
                     <Label htmlFor="hy-body">What you are considering</Label>
                     <Textarea id="hy-body" name="body" />
+                    {propose ? <SuspectCheck id="hy-ack" /> : null}
                     {addedEvent.error ? <p className="text-sm text-destructive">{addedEvent.error}</p> : null}
                     <Button type="submit" disabled={addingEvent} className="h-10">
-                      {addingEvent ? "Saving…" : "Add to the line"}
+                      {addingEvent ? "Saving…" : propose ? "Submit pull request" : "Add to the line"}
                     </Button>
                   </form>
                 </div>
@@ -517,7 +550,7 @@ export function RepositoryStudio({
             type="button"
             id="repo-plus"
             aria-expanded={open !== "closed"}
-            aria-label={open === "closed" ? "Add to this repository" : "Close"}
+            aria-label={open === "closed" ? (propose ? "Send a pull request" : "Add to this repository") : "Close"}
             onClick={() => setOpen((value) => (value === "closed" ? "menu" : "closed"))}
             className="relative grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-300 hover:scale-105"
           >

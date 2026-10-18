@@ -112,6 +112,8 @@ export type HypotheticalEvent = {
   basedOn: string
 }
 
+export type DeskLineage = "original" | "cloned" | "fork"
+
 export type Clone = {
   id: string
   caseId: string
@@ -123,6 +125,29 @@ export type Clone = {
   hypothetical: HypotheticalEvent[]
   brief: Brief | null
   note: string
+  lineage: DeskLineage
+  sourceRoomId: string
+  sourceOwnerName: string
+}
+
+export type PullKind = "note" | "media" | "hypothetical"
+export type PullStatus = "open" | "accepted" | "declined"
+
+export type PullRequest = {
+  id: string
+  sourceRoomId: string
+  targetRoomId: string
+  authorId: string
+  targetOwnerId: string
+  caseId: string
+  kind: PullKind
+  status: PullStatus
+  createdAt: string
+  title: string
+  body: string
+  date: string
+  mediaKind: MediaKind | ""
+  url: string
 }
 
 export type ThreadPost = {
@@ -140,6 +165,7 @@ export type Store = {
   connections: Connection[]
   messages: Message[]
   threads: ThreadPost[]
+  pulls: PullRequest[]
 }
 
 export type ActionState = {
@@ -176,6 +202,9 @@ export type RoomView = {
     note: string
     media: RepoMedia[]
     hypothetical: HypotheticalEvent[]
+    lineage: DeskLineage
+    sourceRoomId: string
+    sourceOwnerName: string
   }
   locked: boolean
   caseFile: CaseFile
@@ -199,4 +228,6 @@ export type RoomCard = {
   mediaCount: number
   hypotheticalCount: number
   updatedLabel: string
+  lineage: DeskLineage
+  note: string
 }

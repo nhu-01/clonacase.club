@@ -11,15 +11,6 @@ import { caseThreads, publicRepositories, roomForUserCase } from "@/lib/store"
 import { posterTimeline } from "@/lib/mongo"
 import { washingtonById } from "@/lib/washington-public"
 
-function DeskCount({ value, label }: { value: number; label: string }) {
-  return (
-    <span className="border border-primary/30 bg-background/50 px-2.5 py-1 font-mono text-[10px] tracking-[0.14em] uppercase">
-      <span className="text-foreground">{value}</span>
-      <span className="text-muted-foreground"> {label}</span>
-    </span>
-  )
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -81,56 +72,50 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
             </p>
           </div>
         ) : (
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {shared.map((repo, index) => {
               const initial = repo.ownerName.trim().slice(0, 1).toUpperCase() || "?"
-              const line =
-                repo.hypothetical === 1 ? "line" : "lines"
+              const line = repo.hypothetical === 1 ? "line" : "lines"
               return (
-                <Rise key={repo.id} delay={index * 0.07} className="h-full">
+                <Rise key={repo.id} delay={index * 0.05} className="h-full">
                   <li className="h-full">
                     <Link
                       href={`/repository/${repo.id}`}
-                      className="group flex h-full flex-col border border-primary/30 bg-card/55 p-5 transition-colors duration-300 hover:border-primary hover:bg-card"
+                      className="group flex h-full flex-col border border-primary/30 bg-card/55 px-3.5 py-3 transition-colors duration-300 hover:border-primary hover:bg-card"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span
-                            aria-hidden="true"
-                            className="grid size-12 shrink-0 place-items-center border border-primary/45 bg-[oklch(0.16_0.03_18)] font-heading text-2xl font-light text-primary"
-                          >
-                            {initial}
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          aria-hidden="true"
+                          className="grid size-8 shrink-0 place-items-center border border-primary/45 bg-[oklch(0.16_0.03_18)] font-heading text-base font-light text-primary"
+                        >
+                          {initial}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="flex min-w-0 items-baseline gap-2">
+                            <span className="truncate font-heading text-lg leading-none font-light">{repo.ownerName}</span>
+                            {repo.ownerId === user.id ? (
+                              <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-primary uppercase">Yours</span>
+                            ) : null}
+                            {repo.lineage === "cloned" ? (
+                              <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-primary uppercase">Cloned</span>
+                            ) : null}
                           </span>
-                          <span className="min-w-0">
-                            <span className="block truncate font-heading text-2xl leading-none font-light">{repo.ownerName}</span>
-                            <span className="mt-1.5 block font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
-                              Opened {formatDay(repo.createdAt)}
-                            </span>
+                          <span className="mt-1 block font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                            Opened {formatDay(repo.createdAt)}
                           </span>
-                        </div>
-                        {repo.ownerId === user.id ? (
-                          <span className="shrink-0 border border-primary/40 px-2 py-1 font-mono text-[10px] tracking-[0.16em] text-primary uppercase">
-                            Yours
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <DeskCount value={repo.notes} label={repo.notes === 1 ? "note" : "notes"} />
-                        <DeskCount value={repo.media} label="media" />
-                        <DeskCount value={repo.hypothetical} label={line} />
-                      </div>
+                        </span>
+                      </span>
+                      <p className="mt-2.5 font-mono text-[10px] tracking-[0.12em] text-muted-foreground uppercase">
+                        {repo.notes} {repo.notes === 1 ? "note" : "notes"} · {repo.media} media · {repo.hypothetical} {line}
+                      </p>
                       {repo.preview ? (
-                        <p className="mt-4 line-clamp-2 font-heading text-lg leading-snug font-light text-foreground/90">
-                          {repo.preview}
-                        </p>
+                        <p className="mt-1.5 truncate text-sm text-foreground/90">{repo.preview}</p>
                       ) : repo.note ? (
-                        <p className="mt-4 line-clamp-2 text-sm leading-6 text-muted-foreground">{repo.note}</p>
-                      ) : (
-                        <p className="mt-4 text-sm leading-6 text-muted-foreground">Opened from the poster. Nothing saved on this desk yet.</p>
-                      )}
-                      <span className="mt-auto pt-5 font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
-                        Open repository
-                        <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+                        <p className="mt-1.5 truncate text-sm text-muted-foreground">{repo.note}</p>
+                      ) : null}
+                      <span className="mt-2 font-mono text-[10px] tracking-[0.14em] text-primary uppercase">
+                        Open
+                        <span className="ml-1 inline-block transition-transform duration-300 group-hover:translate-x-0.5">→</span>
                       </span>
                     </Link>
                   </li>

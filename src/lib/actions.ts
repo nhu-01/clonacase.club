@@ -8,6 +8,7 @@ import { isHttpUrl, isInternalPath, safeNext } from "@/lib/format"
 import { clearSession, demoIdentity, setSession } from "@/lib/session"
 import { posterBeats } from "@/lib/poster-beats"
 import {
+  authorName,
   caseById,
   getRoom,
   lastWriteDurable,
@@ -15,7 +16,7 @@ import {
   updateStore,
 } from "@/lib/store"
 import { washingtonById } from "@/lib/washington-public"
-import type { ActionState, ConnectionType, HypotheticalEvent, MediaKind, Milestone, MilestoneKind, RepoMedia } from "@/lib/types"
+import type { ActionState, Clone, ConnectionType, HypotheticalEvent, MediaKind, Milestone, MilestoneKind, PullKind, RepoMedia } from "@/lib/types"
 
 const KINDS: MilestoneKind[] = ["sourced", "lead", "inconclusive"]
 const LINK_TYPES: ConnectionType[] = [
@@ -32,12 +33,18 @@ function text(formData: FormData, key: string, max: number) {
 function refresh(roomId: string, caseId?: string) {
   revalidatePath("/archive")
   revalidatePath("/rooms")
+  revalidatePath("/pulls")
   revalidatePath(`/room/${roomId}`)
   revalidatePath(`/repository/${roomId}`)
   if (caseId) {
     revalidatePath(`/cases/${caseId}`)
     revalidatePath(`/records/${caseId}`)
   }
+}
+
+function forkError(lineage: string | undefined) {
+  if (lineage === "fork") return "This is a fork. Send a pull request instead of saving it on this desk."
+  return ""
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -74,7 +81,9 @@ export async function cloneCase(formData: FormData) {
 
   let roomId = ""
   await updateStore((store) => {
-    const existing = store.clones.find((clone) => clone.caseId === caseId && clone.ownerId === user.id)
+    const existing = store.clones.find(
+      (clone) => clone.caseId === caseId && clone.ownerId === user.id && (clone.lineage ?? "original") === "original",
+    )
     if (existing) {
       roomId = existing.id
       return
@@ -91,6 +100,9 @@ export async function cloneCase(formData: FormData) {
       hypothetical: [],
       brief: null,
       note: "",
+      lineage: "original",
+      sourceRoomId: "",
+      sourceOwnerName: "",
     })
   })
   revalidatePath("/rooms")
@@ -258,6 +270,9 @@ export async function setVisibility(_prev: ActionState, formData: FormData): Pro
   }
 
   if (next !== "public") return { error: "Choose public or private." }
+  if (room.clone.lineage === "fork") {
+    return { error: "A fork stays private. Send a pull request to the original desk." }
+  }
   const missing = room.milestones.filter((item) => item.kind === "sourced" && !item.sourceLabel.trim())
   if (missing.length > 0) {
     return { error: "Name a source on every sourced milestone before sharing." }
@@ -371,7 +386,9 @@ export async function cloneRecord(formData: FormData): Promise<{ roomId?: string
 
   let roomId = ""
   await updateStore((store) => {
-    const existing = store.clones.find((clone) => clone.caseId === caseId && clone.ownerId === user.id)
+    const existing = store.clones.find(
+      (clone) => clone.caseId === caseId && clone.ownerId === user.id && (clone.lineage ?? "original") === "original",
+    )
     if (existing) {
       roomId = existing.id
       return
@@ -388,6 +405,9 @@ export async function cloneRecord(formData: FormData): Promise<{ roomId?: string
       hypothetical: [],
       brief: null,
       note: "",
+      lineage: "original",
+      sourceRoomId: "",
+      sourceOwnerName: "",
     })
   })
   if (!roomId || !lastWriteDurable()) {
@@ -428,6 +448,8 @@ export async function addEvidence(_prev: ActionState, formData: FormData): Promi
   const roomId = text(formData, "roomId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.user || !owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readEvidence(formData)
   if ("error" in fields) return { error: fields.error }
 
@@ -460,6 +482,8 @@ export async function updateEvidence(_prev: ActionState, formData: FormData): Pr
   const milestoneId = text(formData, "milestoneId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readEvidence(formData)
   if ("error" in fields) return { error: fields.error }
 
@@ -485,7 +509,7 @@ export async function deleteEvidence(formData: FormData) {
   const roomId = text(formData, "roomId", 40)
   const milestoneId = text(formData, "milestoneId", 40)
   const owned = await ownedRoom(roomId)
-  if (!owned.room) return
+  if (!owned.room || forkError(owned.room.clone.lineage)) return
   await updateStore((store) => {
     const clone = store.clones.find((item) => item.id === roomId)
     if (!clone) return
@@ -522,6 +546,7 @@ export async function deleteRepository(formData: FormData) {
   await updateStore((store) => {
     store.clones = store.clones.filter((item) => item.id !== roomId)
     store.messages = store.messages.filter((item) => item.cloneId !== roomId)
+    store.pulls = (store.pulls ?? []).filter((item) => item.sourceRoomId !== roomId && item.targetRoomId !== roomId)
   })
   refresh(roomId, caseId)
   redirect("/rooms")
@@ -564,6 +589,8 @@ export async function addMedia(_prev: ActionState, formData: FormData): Promise<
   const roomId = text(formData, "roomId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.user || !owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readMedia(formData)
   if ("error" in fields) return { error: fields.error }
   const item: RepoMedia = {
@@ -589,7 +616,7 @@ export async function deleteMedia(formData: FormData) {
   const roomId = text(formData, "roomId", 40)
   const mediaId = text(formData, "mediaId", 40)
   const owned = await ownedRoom(roomId)
-  if (!owned.room) return
+  if (!owned.room || forkError(owned.room.clone.lineage)) return
   await updateStore((store) => {
     const clone = store.clones.find((entry) => entry.id === roomId)
     if (!clone?.media) return
@@ -603,6 +630,8 @@ export async function updateMedia(_prev: ActionState, formData: FormData): Promi
   const mediaId = text(formData, "mediaId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readMedia(formData)
   if ("error" in fields) return { error: fields.error }
   await updateStore((store) => {
@@ -631,6 +660,8 @@ export async function addHypothetical(_prev: ActionState, formData: FormData): P
   const roomId = text(formData, "roomId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readHypothetical(formData)
   if ("error" in fields) return { error: fields.error }
   const event: HypotheticalEvent = { id: newId("hy"), date: fields.date, title: fields.title, body: fields.body, basedOn: "" }
@@ -650,6 +681,8 @@ export async function updateHypothetical(_prev: ActionState, formData: FormData)
   const eventId = text(formData, "eventId", 40)
   const owned = await ownedRoom(roomId)
   if (!owned.room) return { error: owned.error }
+  const blocked = forkError(owned.room.clone.lineage)
+  if (blocked) return { error: blocked }
   const fields = readHypothetical(formData)
   if ("error" in fields) return { error: fields.error }
   await updateStore((store) => {
@@ -667,7 +700,7 @@ export async function updateHypothetical(_prev: ActionState, formData: FormData)
 export async function seedHypothetical(formData: FormData) {
   const roomId = text(formData, "roomId", 40)
   const owned = await ownedRoom(roomId)
-  if (!owned.room) return
+  if (!owned.room || forkError(owned.room.clone.lineage)) return
   const record = washingtonById(owned.room.caseFile.id)
   if (!record) return
   const beats = posterBeats(record).filter((beat) => beat.kind !== "state_listing" && /^\d{4}-\d{2}-\d{2}$/.test(beat.sort))
@@ -689,13 +722,247 @@ export async function deleteHypothetical(formData: FormData) {
   const roomId = text(formData, "roomId", 40)
   const eventId = text(formData, "eventId", 40)
   const owned = await ownedRoom(roomId)
-  if (!owned.room) return
+  if (!owned.room || forkError(owned.room.clone.lineage)) return
   await updateStore((store) => {
     const clone = store.clones.find((entry) => entry.id === roomId)
     if (!clone?.hypothetical) return
     clone.hypothetical = clone.hypothetical.filter((event) => event.id !== eventId)
   })
   refresh(roomId, owned.room.caseFile.id)
+}
+
+function copiedDesk(source: Clone) {
+  return {
+    milestones: (source.milestones ?? []).map((item) => ({ ...item, id: newId("ms") })),
+    media: (source.media ?? []).map((item) => ({ ...item, id: newId("media") })),
+    hypothetical: (source.hypothetical ?? []).map((item) => ({ ...item, id: newId("hy") })),
+  }
+}
+
+async function takeRepository(formData: FormData, lineage: "cloned" | "fork"): Promise<ActionState> {
+  const user = await getCurrentUser()
+  const roomId = text(formData, "roomId", 40)
+  if (!user) redirect(`/login?next=/repository/${roomId}`)
+
+  let created = ""
+  let error = ""
+  let caseId = ""
+  await updateStore((store) => {
+    const source = store.clones.find((item) => item.id === roomId)
+    if (!source || source.visibility !== "public") {
+      error = "That repository is not public."
+      return
+    }
+    if (source.ownerId === user.id) {
+      error = "This desk is already yours."
+      return
+    }
+    const prior = store.clones.find(
+      (item) => item.ownerId === user.id && item.sourceRoomId === source.id && item.lineage === lineage,
+    )
+    if (prior) {
+      created = prior.id
+      caseId = prior.caseId
+      return
+    }
+    const name = authorName(store, source.ownerId)
+    const copy = copiedDesk(source)
+    created = newId("room")
+    caseId = source.caseId
+    store.clones.push({
+      id: created,
+      caseId: source.caseId,
+      ownerId: user.id,
+      visibility: "private",
+      createdAt: new Date().toISOString(),
+      milestones: copy.milestones,
+      media: copy.media,
+      hypothetical: copy.hypothetical,
+      brief: null,
+      note: lineage === "cloned" ? `Cloned from ${name}.` : `Forked from ${name}.`,
+      lineage,
+      sourceRoomId: source.id,
+      sourceOwnerName: name,
+    })
+  })
+  if (error) return { error }
+  if (!created || !lastWriteDurable()) return { error: "The repository did not save." }
+  refresh(created, caseId)
+  redirect(`/repository/${created}`)
+}
+
+export async function cloneRepository(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return takeRepository(formData, "cloned")
+}
+
+export async function forkRepository(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return takeRepository(formData, "fork")
+}
+
+export async function submitPull(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in to send a pull request." }
+  if (formData.get("acknowledge") !== "yes") return { error: "Confirm that these notes name no suspect." }
+  const roomId = text(formData, "roomId", 40)
+  const pull = text(formData, "pull", 20) as PullKind
+  if (pull !== "note" && pull !== "media" && pull !== "hypothetical") {
+    return { error: "Choose a note, media, or a hypothetical event." }
+  }
+
+  let payload: { title: string; body: string; date: string; mediaKind: MediaKind | ""; url: string }
+  if (pull === "note") {
+    const fields = readEvidence(formData)
+    if ("error" in fields) return { error: fields.error }
+    payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
+  } else if (pull === "media") {
+    const fields = readMedia(formData)
+    if ("error" in fields) return { error: fields.error }
+    payload = { title: fields.title, body: fields.note, date: "", mediaKind: fields.kind, url: fields.url }
+  } else {
+    const fields = readHypothetical(formData)
+    if ("error" in fields) return { error: fields.error }
+    payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
+  }
+
+  let error = ""
+  let caseId = ""
+  let targetId = ""
+  await updateStore((store) => {
+    const fork = store.clones.find((item) => item.id === roomId)
+    if (!fork || fork.ownerId !== user.id || fork.lineage !== "fork" || !fork.sourceRoomId) {
+      error = "Only a fork can send a pull request."
+      return
+    }
+    const target = store.clones.find((item) => item.id === fork.sourceRoomId)
+    if (!target) {
+      error = "The original repository is gone."
+      return
+    }
+    if (!store.pulls) store.pulls = []
+    store.pulls.push({
+      id: newId("pull"),
+      sourceRoomId: fork.id,
+      targetRoomId: target.id,
+      authorId: user.id,
+      targetOwnerId: target.ownerId,
+      caseId: fork.caseId,
+      kind: pull,
+      status: "open",
+      createdAt: new Date().toISOString(),
+      title: payload.title,
+      body: payload.body,
+      date: payload.date,
+      mediaKind: payload.mediaKind,
+      url: payload.url,
+    })
+    caseId = fork.caseId
+    targetId = target.id
+  })
+  if (error) return { error }
+  if (!lastWriteDurable()) return { error: "The pull request did not save." }
+  refresh(roomId, caseId)
+  if (targetId) revalidatePath(`/repository/${targetId}`)
+  return { ok: true }
+}
+
+export async function acceptPull(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in first." }
+  const pullId = text(formData, "pullId", 40)
+  let error = ""
+  let caseId = ""
+  let targetId = ""
+  let sourceId = ""
+  await updateStore((store) => {
+    const pull = (store.pulls ?? []).find((item) => item.id === pullId)
+    if (!pull || pull.targetOwnerId !== user.id) {
+      error = "That pull request is not yours to accept."
+      return
+    }
+    if (pull.status !== "open") {
+      error = "That pull request is already closed."
+      return
+    }
+    const target = store.clones.find((item) => item.id === pull.targetRoomId && item.ownerId === user.id)
+    if (!target) {
+      error = "The original repository is gone."
+      return
+    }
+    if (pull.kind === "note") {
+      target.milestones.push({
+        id: newId("ms"),
+        date: pull.date || new Date().toISOString().slice(0, 10),
+        title: pull.title,
+        body: pull.body,
+        kind: "lead",
+        sourceLabel: "",
+        sourceUrl: "",
+        imageUrl: "",
+        authorId: pull.authorId,
+        createdAt: new Date().toISOString(),
+        origin: "room",
+      })
+      target.brief = null
+    } else if (pull.kind === "media") {
+      if (!target.media) target.media = []
+      const kind = pull.mediaKind || "article"
+      target.media.push({
+        id: newId("media"),
+        kind,
+        title: pull.title,
+        url: pull.url,
+        note: pull.body,
+        createdAt: new Date().toISOString(),
+      })
+    } else {
+      if (!target.hypothetical) target.hypothetical = []
+      target.hypothetical.push({
+        id: newId("hy"),
+        date: pull.date || new Date().toISOString().slice(0, 10),
+        title: pull.title,
+        body: pull.body,
+        basedOn: "Pull request. A reading, not a finding.",
+      })
+    }
+    pull.status = "accepted"
+    caseId = pull.caseId
+    targetId = target.id
+    sourceId = pull.sourceRoomId
+  })
+  if (error) return { error }
+  if (!lastWriteDurable()) return { error: "The pull request did not save." }
+  if (targetId) refresh(targetId, caseId)
+  if (sourceId) revalidatePath(`/repository/${sourceId}`)
+  return { ok: true }
+}
+
+export async function declinePull(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Sign in first." }
+  const pullId = text(formData, "pullId", 40)
+  let error = ""
+  let sourceId = ""
+  let targetId = ""
+  await updateStore((store) => {
+    const pull = (store.pulls ?? []).find((item) => item.id === pullId)
+    if (!pull || pull.targetOwnerId !== user.id) {
+      error = "That pull request is not yours to decline."
+      return
+    }
+    if (pull.status !== "open") {
+      error = "That pull request is already closed."
+      return
+    }
+    pull.status = "declined"
+    sourceId = pull.sourceRoomId
+    targetId = pull.targetRoomId
+  })
+  if (error) return { error }
+  if (!lastWriteDurable()) return { error: "The pull request did not save." }
+  revalidatePath("/pulls")
+  if (sourceId) revalidatePath(`/repository/${sourceId}`)
+  if (targetId) revalidatePath(`/repository/${targetId}`)
+  return { ok: true }
 }
 
 export async function deleteThread(formData: FormData) {

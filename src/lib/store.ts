@@ -43,7 +43,7 @@ function publicUser(user: User): PublicUser {
 }
 
 function blankStore(): Store {
-  return { version: VERSION, users: [], clones: [], connections: [], messages: [], threads: [] }
+  return { version: VERSION, users: [], clones: [], connections: [], messages: [], threads: [], pulls: [] }
 }
 
 function seedStore(store: Store) {
@@ -68,6 +68,10 @@ function seedStore(store: Store) {
     store.threads = []
     changed = true
   }
+  if (!store.pulls) {
+    store.pulls = []
+    changed = true
+  }
   for (const clone of store.clones) {
     if (typeof clone.note !== "string") {
       clone.note = ""
@@ -83,6 +87,18 @@ function seedStore(store: Store) {
     }
     if (!clone.milestones) {
       clone.milestones = []
+      changed = true
+    }
+    if (clone.lineage !== "original" && clone.lineage !== "cloned" && clone.lineage !== "fork") {
+      clone.lineage = "original"
+      changed = true
+    }
+    if (typeof clone.sourceRoomId !== "string") {
+      clone.sourceRoomId = ""
+      changed = true
+    }
+    if (typeof clone.sourceOwnerName !== "string") {
+      clone.sourceOwnerName = ""
       changed = true
     }
   }
@@ -284,7 +300,7 @@ export async function toPublicUser(id: string | null) {
   return user ? publicUser(user) : null
 }
 
-function authorName(store: Store, authorId: string | null) {
+export function authorName(store: Store, authorId: string | null) {
   if (!authorId) return "Public file"
   const demo = /^demo_([a-z0-9]+)_/i.exec(authorId)
   if (demo) return demo[1]
@@ -324,6 +340,8 @@ export async function listRooms(userId: string): Promise<{ mine: RoomCard[]; sha
         mediaCount: (clone.media ?? []).length,
         hypotheticalCount: (clone.hypothetical ?? []).length,
         updatedLabel: clone.createdAt,
+        lineage: clone.lineage ?? "original",
+        note: clone.note ?? "",
       }
       return card
     })
@@ -338,7 +356,20 @@ export async function listRooms(userId: string): Promise<{ mine: RoomCard[]; sha
 
 export async function roomForUserCase(userId: string, caseId: string) {
   const store = await readStore()
-  return store.clones.find((clone) => clone.ownerId === userId && clone.caseId === caseId) ?? null
+  return (
+    store.clones.find(
+      (clone) => clone.ownerId === userId && clone.caseId === caseId && (clone.lineage ?? "original") === "original",
+    ) ?? null
+  )
+}
+
+export async function takesFor(userId: string, sourceRoomId: string) {
+  const store = await readStore()
+  const mine = store.clones.filter((clone) => clone.ownerId === userId && clone.sourceRoomId === sourceRoomId)
+  return {
+    cloneId: mine.find((item) => item.lineage === "cloned")?.id ?? null,
+    forkId: mine.find((item) => item.lineage === "fork")?.id ?? null,
+  }
 }
 
 export async function getRoom(roomId: string, viewerId: string): Promise<RoomView | null> {
@@ -365,6 +396,9 @@ export async function getRoom(roomId: string, viewerId: string): Promise<RoomVie
       note: clone.note ?? "",
       media: locked ? [] : (clone.media ?? []),
       hypothetical: locked ? [] : (clone.hypothetical ?? []),
+      lineage: clone.lineage ?? "original",
+      sourceRoomId: clone.sourceRoomId ?? "",
+      sourceOwnerName: clone.sourceOwnerName ?? "",
     },
     locked,
     caseFile: file,
@@ -415,8 +449,38 @@ export async function publicRepositories(caseId: string) {
         hypothetical: hypothetical.length,
         preview,
         createdAt: clone.createdAt,
+        lineage: clone.lineage ?? "original",
       }
     })
+}
+
+export async function listPulls(userId: string) {
+  const store = await readStore()
+  const cards = (store.pulls ?? [])
+    .map((pull) => ({
+      id: pull.id,
+      status: pull.status,
+      kind: pull.kind,
+      title: pull.title,
+      body: pull.body,
+      date: pull.date,
+      url: pull.url,
+      mediaKind: pull.mediaKind,
+      caseId: pull.caseId,
+      caseName: caseById(pull.caseId)?.name ?? "Poster",
+      authorId: pull.authorId,
+      authorName: authorName(store, pull.authorId),
+      targetOwnerId: pull.targetOwnerId,
+      targetOwnerName: authorName(store, pull.targetOwnerId),
+      sourceRoomId: pull.sourceRoomId,
+      targetRoomId: pull.targetRoomId,
+      createdAt: pull.createdAt,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  return {
+    sent: cards.filter((pull) => pull.authorId === userId),
+    received: cards.filter((pull) => pull.targetOwnerId === userId),
+  }
 }
 
 export async function caseThreads(caseId: string) {
