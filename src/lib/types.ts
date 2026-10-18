@@ -159,6 +159,7 @@ export type ThreadPost = {
   authorId: string
   body: string
   createdAt: string
+  parentId?: string
 }
 
 export type Store = {

@@ -507,6 +507,7 @@ export async function caseThreads(caseId: string) {
       createdAt: post.createdAt,
       authorId: post.authorId,
       authorName: authorName(store, post.authorId),
+      parentId: post.parentId,
     }))
 }
 

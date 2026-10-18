@@ -498,6 +498,21 @@ html.clone-opening body > :not(.clone-veil) {
   transition-delay: 0.08s;
 }
 
+.reply-in {
+  animation: reply-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes reply-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.clone-opening body > :not(.clone-veil) {
     opacity: 1;
@@ -519,6 +534,7 @@ html.clone-opening body > :not(.clone-veil) {
   .plus-swap,
   .plus-choice,
   .repo-plus-icon,
+  .reply-in,
   html[data-ink] .poster-frame rect {
     animation: none;
   }

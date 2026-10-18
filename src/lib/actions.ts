@@ -558,19 +558,43 @@ export async function postThread(_prev: ActionState, formData: FormData): Promis
   if (!user) return { error: "Sign in to join the thread." }
   const caseId = text(formData, "caseId", 64)
   const body = text(formData, "body", 500)
+  const parentId = text(formData, "parentId", 40)
   if (!washingtonById(caseId)) return { error: "That poster is not among the cases." }
   if (body.length < 2) return { error: "Write a comment first." }
-  await updateStore((store) => {
+  const error = await updateStore((store) => {
+    if (parentId && !threadParent(store.threads, caseId, parentId)) {
+      return "That comment is no longer on the thread."
+    }
     store.threads.push({
       id: newId("thread"),
       caseId,
       authorId: user.id,
       body,
       createdAt: new Date().toISOString(),
+      ...(parentId ? { parentId } : {}),
     })
+    return ""
   })
+  if (error) return { error }
   revalidatePath(`/records/${caseId}`)
   return { ok: true }
+}
+
+function threadParent(threads: { id: string; caseId: string; parentId?: string }[], caseId: string, parentId: string) {
+  const parent = threads.find((post) => post.id === parentId && post.caseId === caseId)
+  if (!parent) return undefined
+  const seen = new Set<string>([parent.id])
+  let cursor = parent
+  let depth = 1
+  while (cursor.parentId) {
+    depth += 1
+    if (depth > 12 || seen.has(cursor.parentId)) return undefined
+    const next = threads.find((post) => post.id === cursor.parentId && post.caseId === caseId)
+    if (!next) break
+    seen.add(next.id)
+    cursor = next
+  }
+  return parent
 }
 
 const MEDIA: MediaKind[] = ["article", "photo", "video", "pdf"]
@@ -979,9 +1003,22 @@ export async function deleteThread(formData: FormData) {
   const caseId = text(formData, "caseId", 64)
   const postId = text(formData, "postId", 40)
   await updateStore((store) => {
-    store.threads = store.threads.filter(
-      (post) => !(post.id === postId && post.caseId === caseId && post.authorId === user.id),
+    const target = store.threads.find(
+      (post) => post.id === postId && post.caseId === caseId && post.authorId === user.id,
     )
+    if (!target) return
+    const drop = new Set<string>([target.id])
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const post of store.threads) {
+        if (post.caseId === caseId && post.parentId && drop.has(post.parentId) && !drop.has(post.id)) {
+          drop.add(post.id)
+          grew = true
+        }
+      }
+    }
+    store.threads = store.threads.filter((post) => !drop.has(post.id))
   })
   revalidatePath(`/records/${caseId}`)
 }
