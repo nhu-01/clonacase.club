@@ -107,9 +107,13 @@ function hosted() {
 
 async function writeStore(store: Store) {
   if (usingMongo()) {
-    await saveDesk(store)
-    memory.__hearthStore = store
-    return
+    try {
+      await saveDesk(store)
+      memory.__hearthStore = store
+      return
+    } catch (error) {
+      console.error("MongoDB did not save the desk.", error)
+    }
   }
   if (hosted()) {
     await saveRemoteDesk(store)
@@ -137,9 +141,13 @@ async function writeStore(store: Store) {
 
 async function ensure(): Promise<Store> {
   if (usingMongo()) {
-    const store = await loadDesk()
-    if (seedStore(store)) await saveDesk(store)
-    return store
+    try {
+      const store = await loadDesk()
+      if (seedStore(store)) await saveDesk(store)
+      return store
+    } catch (error) {
+      console.error("MongoDB did not open the desk.", error)
+    }
   }
   if (hosted()) return loadRemoteDesk(seedStore)
   if (memory.__hearthMemory) return memoryStore()

@@ -20,8 +20,14 @@ async function connect() {
   const uri = process.env.MONGODB_URI
   if (!uri) throw new Error("MONGODB_URI is not set.")
   if (!memory.__mongoClient) {
-    memory.__mongoClient = new MongoClient(uri)
-    await memory.__mongoClient.connect()
+    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 8000 })
+    try {
+      await client.connect()
+      memory.__mongoClient = client
+    } catch (error) {
+      await client.close().catch(() => undefined)
+      throw error
+    }
   }
   return memory.__mongoClient.db()
 }
@@ -156,7 +162,12 @@ export async function saveDesk(store: Store) {
 
 export async function posterTimeline(caseId: string): Promise<PosterBeat[] | null> {
   if (!usingMongo()) return null
-  const db = await ready()
+  let db: Db
+  try {
+    db = await ready()
+  } catch {
+    return null
+  }
   const rows = await db
     .collection<PosterBeat & { caseId: string }>("posterEvents")
     .find({ caseId }, { projection: { _id: 0, caseId: 0 } })
