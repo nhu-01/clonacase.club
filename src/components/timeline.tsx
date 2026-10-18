@@ -16,7 +16,7 @@ function Plate({ item }: { item: MilestoneView }) {
   const tone = hue(item.id)
   if (item.imageUrl && !failed) {
     return (
-      // User-supplied demonstration images are arbitrary URLs, so next/image cannot know the host.
+      // Image links are arbitrary URLs, so next/image cannot know the host.
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={item.imageUrl}

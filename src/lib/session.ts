@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "crypto"
 import { cookies } from "next/headers"
 
-const COOKIE = "hearth_session"
+const COOKIE = "clonacase_session"
 const MAX_AGE = 60 * 60 * 24 * 14
 
 export type SessionUser = {
@@ -11,7 +11,7 @@ export type SessionUser = {
 }
 
 function secret() {
-  return process.env.SESSION_SECRET || "hearth-dev-session-secret"
+  return process.env.SESSION_SECRET || "clonacase-dev-session-secret"
 }
 
 function sign(payload: string) {

@@ -39,7 +39,7 @@ export function heldBack(text: string) {
 }
 
 function secret() {
-  return process.env.SESSION_SECRET || "hearth-dev-session-secret"
+  return process.env.SESSION_SECRET || "clonacase-dev-session-secret"
 }
 
 function posterText(record: WashingtonRecord | null) {

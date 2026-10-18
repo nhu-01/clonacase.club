@@ -20,9 +20,9 @@ const FILE = path.join(process.cwd(), "data", "store.json")
 const VERSION = 1
 
 type MemoryGlobal = typeof globalThis & {
-  __hearthStore?: Store
-  __hearthMemory?: boolean
-  __hearthDurable?: boolean
+  __clonacaseStore?: Store
+  __clonacaseMemory?: boolean
+  __clonacaseDurable?: boolean
 }
 
 const memory = globalThis as MemoryGlobal
@@ -131,12 +131,12 @@ function seedStore(store: Store) {
 }
 
 function memoryStore() {
-  if (!memory.__hearthStore) {
-    memory.__hearthStore = blankStore()
-    seedStore(memory.__hearthStore)
+  if (!memory.__clonacaseStore) {
+    memory.__clonacaseStore = blankStore()
+    seedStore(memory.__clonacaseStore)
   }
-  memory.__hearthMemory = true
-  return memory.__hearthStore
+  memory.__clonacaseMemory = true
+  return memory.__clonacaseStore
 }
 
 function hosted() {
@@ -144,15 +144,15 @@ function hosted() {
 }
 
 export function lastWriteDurable() {
-  return memory.__hearthDurable !== false
+  return memory.__clonacaseDurable !== false
 }
 
 async function writeStore(store: Store) {
   if (usingMongo()) {
     try {
       await saveDesk(store)
-      memory.__hearthStore = store
-      memory.__hearthDurable = true
+      memory.__clonacaseStore = store
+      memory.__clonacaseDurable = true
       return
     } catch (error) {
       console.error("MongoDB did not save the desk.", error)
@@ -161,8 +161,8 @@ async function writeStore(store: Store) {
   if (usingBlob()) {
     try {
       await saveBlobDesk(store)
-      memory.__hearthStore = store
-      memory.__hearthDurable = true
+      memory.__clonacaseStore = store
+      memory.__clonacaseDurable = true
       return
     } catch (error) {
       console.error("The desk store did not save.", error)
@@ -171,33 +171,33 @@ async function writeStore(store: Store) {
   if (hosted()) {
     try {
       await saveRemoteDesk(store)
-      memory.__hearthStore = store
-      memory.__hearthDurable = true
+      memory.__clonacaseStore = store
+      memory.__clonacaseDurable = true
       return
     } catch (error) {
       console.error("The shared desk did not save.", error)
-      memory.__hearthStore = store
-      memory.__hearthMemory = true
-      memory.__hearthDurable = false
+      memory.__clonacaseStore = store
+      memory.__clonacaseMemory = true
+      memory.__clonacaseDurable = false
       return
     }
   }
-  if (memory.__hearthMemory) {
-    memory.__hearthStore = store
-    memory.__hearthMemory = true
-    memory.__hearthDurable = false
+  if (memory.__clonacaseMemory) {
+    memory.__clonacaseStore = store
+    memory.__clonacaseMemory = true
+    memory.__clonacaseDurable = false
     return
   }
   try {
     await mkdir(path.dirname(FILE), { recursive: true })
     await writeFile(FILE, JSON.stringify(store, null, 2))
-    memory.__hearthDurable = true
+    memory.__clonacaseDurable = true
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     if (code === "EROFS" || code === "EACCES" || code === "EPERM" || code === "ENOENT") {
-      memory.__hearthStore = store
-      memory.__hearthMemory = true
-      memory.__hearthDurable = false
+      memory.__clonacaseStore = store
+      memory.__clonacaseMemory = true
+      memory.__clonacaseDurable = false
       return
     }
     throw error
@@ -219,8 +219,8 @@ async function ensure(): Promise<Store> {
       const loaded = await loadBlobDesk()
       const store = loaded ?? blankStore()
       if (!loaded || seedStore(store)) await saveBlobDesk(store)
-      memory.__hearthStore = store
-      memory.__hearthDurable = true
+      memory.__clonacaseStore = store
+      memory.__clonacaseDurable = true
       return store
     } catch (error) {
       console.error("The desk store did not open.", error)
@@ -234,7 +234,7 @@ async function ensure(): Promise<Store> {
       return memoryStore()
     }
   }
-  if (memory.__hearthMemory) return memoryStore()
+  if (memory.__clonacaseMemory) return memoryStore()
 
   let store: Store
   try {
@@ -245,7 +245,7 @@ async function ensure(): Promise<Store> {
   }
   seedStore(store)
   await writeStore(store)
-  return memory.__hearthMemory ? memoryStore() : store
+  return memory.__clonacaseMemory ? memoryStore() : store
 }
 
 export function readStore() {
