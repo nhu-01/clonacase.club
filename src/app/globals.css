@@ -182,23 +182,42 @@ body {
 }
 
 .slogan-line {
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%, transparent 100%);
-  mask-image: linear-gradient(90deg, #000 0%, #000 42%, transparent 58%, transparent 100%);
-  -webkit-mask-size: 280% 100%;
-  mask-size: 280% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  animation: slogan-in 1.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+  white-space: pre;
 }
 
-@keyframes slogan-in {
-  from {
-    -webkit-mask-position: 100% 0;
-    mask-position: 100% 0;
-  }
+.slogan-char {
+  position: relative;
+  opacity: 0;
+  animation: slogan-type 0.16s ease forwards;
+  animation-delay: var(--at);
+}
+
+.slogan-char::after {
+  content: "";
+  position: absolute;
+  top: 0.06em;
+  bottom: 0;
+  right: -0.04em;
+  width: 2px;
+  background: currentColor;
+  opacity: 0;
+  animation: slogan-caret 130ms linear forwards;
+  animation-delay: var(--at);
+}
+
+@keyframes slogan-type {
   to {
-    -webkit-mask-position: 0% 0;
-    mask-position: 0% 0;
+    opacity: 1;
+  }
+}
+
+@keyframes slogan-caret {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 
@@ -579,7 +598,8 @@ html.clone-opening body > :not(.clone-veil) {
   .reply-in,
   .mark-flow,
   .mark-echo,
-  .slogan-line,
+  .slogan-char,
+  .slogan-char::after,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
@@ -606,8 +626,11 @@ html.clone-opening body > :not(.clone-veil) {
     offset-distance: 62%;
   }
 
-  .slogan-line {
-    -webkit-mask-image: none;
-    mask-image: none;
+  .slogan-char {
+    opacity: 1;
+  }
+
+  .slogan-char::after {
+    content: none;
   }
 }
