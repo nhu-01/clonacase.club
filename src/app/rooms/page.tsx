@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Repository" }
 export default async function RoomsPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login?next=/rooms")
-  const { mine, shared } = await listRooms(user.id)
+  const mine = await listRooms(user.id)
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-14">
@@ -60,30 +60,6 @@ export default async function RoomsPage() {
                   </span>
                 </li>
               </Rise>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section className="mt-14">
-        <h2 className="font-heading text-3xl font-light">Shared with the desk</h2>
-        {shared.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No other public rooms yet.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-border/80 border-y border-border/80">
-            {shared.map((room) => (
-              <li key={room.id}>
-                <Link href={`/repository/${room.id}`} className="flex items-end justify-between gap-4 py-5">
-                  <span>
-                    <span className="block font-heading text-3xl font-light">{room.caseName}</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      {room.ownerName} · {room.city}
-                    </span>
-                  </span>
-                  <span className="font-mono text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-                    Public
-                  </span>
-                </Link>
-              </li>
             ))}
           </ul>
         )}

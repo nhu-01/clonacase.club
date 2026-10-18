@@ -322,7 +322,7 @@ export function connectionViews(store: Store, caseId?: string): ConnectionView[]
     }))
 }
 
-export async function listRooms(userId: string): Promise<{ mine: RoomCard[]; shared: RoomCard[] }> {
+export async function listRooms(userId: string): Promise<RoomCard[]> {
   const store = await readStore()
   const cards = store.clones
     .map((clone) => {
@@ -348,10 +348,7 @@ export async function listRooms(userId: string): Promise<{ mine: RoomCard[]; sha
     .filter((card): card is RoomCard => card !== null)
     .sort((a, b) => b.updatedLabel.localeCompare(a.updatedLabel))
 
-  return {
-    mine: cards.filter((card) => card.ownerId === userId),
-    shared: cards.filter((card) => card.visibility === "public" && card.ownerId !== userId),
-  }
+  return cards.filter((card) => card.ownerId === userId)
 }
 
 export async function roomForUserCase(userId: string, caseId: string) {
