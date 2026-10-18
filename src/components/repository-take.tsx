@@ -89,7 +89,7 @@ export function RepositoryTake({
         </Button>
       )}
       <p className="max-w-56 text-left text-[11px] leading-4 text-muted-foreground sm:text-right">
-        Clone stays private, tagged cloned from {ownerName}. A fork sends new notes back as a pull request.
+        Clone stays private, tagged cloned from {ownerName}. A fork sends new notes to the original repository as a pull request.
       </p>
       {error ? <p className="max-w-56 text-right text-xs text-destructive">{error}</p> : null}
 
@@ -99,7 +99,7 @@ export function RepositoryTake({
             <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">Fork</p>
             <DialogTitle className="font-heading text-3xl font-light">This fork sends pull requests.</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-muted-foreground">
-              Anything you add is sent to {ownerName} as a pull request. It does not go on their repository until they accept it.
+              Anything you add on this fork is submitted as a pull request to the original repository. It does not go on that repository until it is accepted.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap justify-end gap-2">

@@ -32,7 +32,7 @@ export default async function PullsPage() {
       <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">PRs</p>
       <h1 className="mt-4 font-heading text-5xl font-light tracking-tight sm:text-6xl">Pull requests</h1>
       <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-        A fork does not write onto someone else’s desk. A note, a media link, or a hypothetical event waits here until the original repository accepts it. A hypothetical line is a reading, not a finding.
+        A fork does not write onto the original repository. A note, a media link, or a hypothetical event waits here until that repository accepts it. A hypothetical line is a reading, not a finding.
       </p>
 
       <section className="mt-12">

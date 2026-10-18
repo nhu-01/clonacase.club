@@ -70,11 +70,11 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
           <span className="mt-1 block text-muted-foreground">
             {lineage === "cloned"
               ? `Cloned from ${room.clone.sourceOwnerName}. This copy is private.`
-              : `Forked from ${room.clone.sourceOwnerName}. A new note, media item, or hypothetical event is a pull request. It is not on their desk until they accept it.`}
+              : `Forked from ${room.clone.sourceOwnerName}. A new note, media item, or hypothetical event is a pull request to the original repository. It does not go there until it is accepted.`}
           </span>
           {room.clone.sourceRoomId ? (
             <Link href={`/repository/${room.clone.sourceRoomId}`} className="mt-2 inline-block text-xs text-foreground underline decoration-primary/40 underline-offset-4">
-              Open their repository
+              Open the original repository
             </Link>
           ) : null}
         </p>
