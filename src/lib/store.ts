@@ -2,6 +2,7 @@ import { randomBytes } from "crypto"
 import { mkdir, readFile, writeFile } from "fs/promises"
 import path from "path"
 import { loadRemoteDesk, saveRemoteDesk } from "@/lib/remote-desk"
+import { loadDesk, saveDesk, usingTiger } from "@/lib/tiger"
 import { CASES, SEEDED_CONNECTION } from "@/lib/seed"
 import { washingtonById, type WashingtonRecord } from "@/lib/washington-public"
 import type {
@@ -105,6 +106,11 @@ function hosted() {
 }
 
 async function writeStore(store: Store) {
+  if (usingTiger()) {
+    await saveDesk(store)
+    memory.__hearthStore = store
+    return
+  }
   if (hosted()) {
     await saveRemoteDesk(store)
     memory.__hearthStore = store
@@ -130,6 +136,11 @@ async function writeStore(store: Store) {
 }
 
 async function ensure(): Promise<Store> {
+  if (usingTiger()) {
+    const store = await loadDesk()
+    if (seedStore(store)) await saveDesk(store)
+    return store
+  }
   if (hosted()) return loadRemoteDesk(seedStore)
   if (memory.__hearthMemory) return memoryStore()
 

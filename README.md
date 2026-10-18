@@ -17,7 +17,7 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 ## Sign in
 
-Any made-up email and password will open a desk. The password is thrown away. The email and username stay in a signed browser cookie for that visit and are not written down. There is no MongoDB database and no Teradata database.
+Any made-up email and password will open a desk. The password is thrown away. The email and username stay in a signed browser cookie for that visit. Emails and passwords are not written to the database.
 
 The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password works for those too.
 
@@ -30,8 +30,20 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 - Draft a brief from the milestones already in the room. It lists the sourced sequence, gaps of ten days or more, leads, and inconclusive notes.
 - Share the room only after every sourced milestone names a source, and you confirm the room names no suspect.
 
-Notes inside a repository are kept in `data/store.json` on the machine running the app. That folder is local and is not committed. On Vercel the disk is read-only, so those notes sit in a temporary shared document so a clone can be opened again. If that document is cleared, the notes go with it. Emails and passwords are not in that document.
+## Database
+
+clonacase stores the timeline in Tiger Data. Tiger Data is PostgreSQL with TimescaleDB hypertables, so poster dates, repository notes, discussion posts, and room messages are rows partitioned by time.
+
+Set `DATABASE_URL` to a Postgres connection string. Locally that is TimescaleDB on this machine:
+
+```bash
+DATABASE_URL=postgres://clonacase:clonacase@127.0.0.1:5432/clonacase
+```
+
+On the hosted site, create a free service in [Tiger Cloud](https://console.tigerdata.com/) and add that connection string as `DATABASE_URL` in the Vercel project. The public posters are loaded into the `poster_events` hypertable. A private repository’s notes go into the `evidence` hypertable. Emails and passwords are not columns in any table.
+
+If `DATABASE_URL` is missing, the app falls back to `data/store.json` on your machine, or to a temporary shared document when it is running on Vercel.
 
 ## Stack
 
-Next.js, React, TypeScript, Tailwind, and shadcn/ui. Sign-in is a signed cookie. There is no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.
+Next.js, React, TypeScript, Tailwind, shadcn/ui, and Tiger Data (PostgreSQL and TimescaleDB). Sign-in is a signed cookie. There is no model API key. The brief is written from the timeline in this app, on purpose: it cannot browse, name a suspect, or predict a place.

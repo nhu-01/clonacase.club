@@ -7,6 +7,7 @@ import { cloneRecord } from "@/lib/actions"
 import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/current"
 import { caseThreads, publicRepositories, roomForUserCase } from "@/lib/store"
+import { posterTimeline } from "@/lib/tiger"
 import { washingtonById } from "@/lib/washington-public"
 
 export async function generateMetadata({
@@ -28,6 +29,8 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   const mine = await roomForUserCase(user.id, record.id)
   const shared = await publicRepositories(record.id)
   const posts = await caseThreads(record.id)
+  const events = await posterTimeline(record.id)
+  const fromTiger = Boolean(events && events.length > 0)
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-12">
@@ -42,6 +45,8 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
       </p>
       <WashingtonDossier
         record={record}
+        events={fromTiger ? events ?? undefined : undefined}
+        fromTiger={fromTiger}
         action={
           mine ? (
             <Button render={<Link href={`/repository/${mine.id}`} />} className="h-11 px-5" nativeButton={false}>

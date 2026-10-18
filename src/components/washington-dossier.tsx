@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
+import { posterBeats, type PosterBeat } from "@/lib/poster-beats"
 import {
   washingtonMupuPhone,
   washingtonSource,
@@ -38,48 +39,18 @@ function telHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, "")}`
 }
 
-type Beat = {
-  label: string
-  title: string
-  body: string
-  href: string
-  source: string
-  sort: string
-}
-
-function beats(record: WashingtonRecord): Beat[] {
-  const items: Beat[] = []
-  if (record.lastSeen || record.summary) {
-    items.push({
-      sort: record.lastSeenIso ?? "0000-01-01",
-      label: record.lastSeen ?? "On the poster",
-      title: record.lastSeen ? "Last seen" : "What the poster says",
-      body: record.summary,
-      href: record.poster,
-      source: "Official poster",
-    })
-  }
-  items.push({
-    sort: `${record.published}-01`,
-    label: record.publishedLabel,
-    title: "Poster published",
-    body: "Washington State Patrol published this poster. The age is the age printed on it, from when the person was reported missing.",
-    href: record.poster,
-    source: "Official poster",
-  })
-  items.push({
-    sort: "9999-01-01",
-    label: "Public page",
-    title: "Listed by the Washington State Patrol",
-    body: "The poster is on the state missing-persons page. A photograph appears when the family or the investigating agency asked for one.",
-    href: washingtonSource,
-    source: "Washington State Patrol",
-  })
-  return items.sort((a, b) => a.sort.localeCompare(b.sort))
-}
-
-export function WashingtonDossier({ record, action }: { record: WashingtonRecord; action?: ReactNode }) {
-  const events = beats(record)
+export function WashingtonDossier({
+  record,
+  action,
+  events,
+  fromTiger = false,
+}: {
+  record: WashingtonRecord
+  action?: ReactNode
+  events?: PosterBeat[]
+  fromTiger?: boolean
+}) {
+  const timeline = events ?? posterBeats(record)
   const facts = [record.place ? `Missing out of ${record.place}` : null, record.height, record.weight]
     .filter(Boolean)
     .join(" · ")
@@ -171,15 +142,18 @@ export function WashingtonDossier({ record, action }: { record: WashingtonRecord
       </div>
 
       <div className="px-5 py-6 sm:px-7">
+      {fromTiger ? (
+        <p className="mb-4 font-mono text-[10px] tracking-[0.16em] text-primary uppercase">Tiger Data · ordered by time</p>
+      ) : null}
       <ol className="relative space-y-3 pl-8">
         <span
           aria-hidden="true"
           className="spine absolute top-1 bottom-1 left-[7px] w-0.5 bg-linear-to-b from-primary via-primary/70 to-transparent"
           style={{ animationDuration: "1.5s" }}
         />
-        {events.map((event, index) => (
+        {timeline.map((event, index) => (
           <li
-            key={event.title}
+            key={event.kind}
             style={{ animationDelay: `${0.4 + index * 0.28}s` }}
             className="beat relative border border-primary/25 bg-background/40 px-4 py-4"
           >
