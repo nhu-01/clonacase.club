@@ -499,28 +499,18 @@ html.clone-opening body > :not(.clone-veil) {
 }
 
 .mark {
-  color: oklch(0.62 0.12 22);
+  color: oklch(0.58 0.14 22);
 }
 
 .mark-flow,
-.mark-echo,
-.mark-flow-fade,
-.mark-echo-fade {
+.mark-echo {
   offset-path: path("M 3 11 C 3 5 11.2 5 17 11 C 22.8 17 31 17 31 11 C 31 5 22.8 5 17 11 C 11.2 17 3 17 3 11");
   offset-rotate: 0deg;
-  animation: mark-flow 12s linear infinite;
+  animation: mark-flow 8.5s linear infinite;
 }
 
 .mark-echo {
-  animation-delay: -4.4s;
-}
-
-.mark-flow-fade {
-  animation-delay: -0.7s;
-}
-
-.mark-echo-fade {
-  animation-delay: -5.1s;
+  animation-delay: -3.1s;
 }
 
 @keyframes mark-flow {
@@ -568,8 +558,6 @@ html.clone-opening body > :not(.clone-veil) {
   .reply-in,
   .mark-flow,
   .mark-echo,
-  .mark-flow-fade,
-  .mark-echo-fade,
   html[data-ink] .poster-frame rect {
     animation: none;
   }
@@ -594,10 +582,5 @@ html.clone-opening body > :not(.clone-veil) {
 
   .mark-echo {
     offset-distance: 62%;
-  }
-
-  .mark-flow-fade,
-  .mark-echo-fade {
-    opacity: 0;
   }
 }
