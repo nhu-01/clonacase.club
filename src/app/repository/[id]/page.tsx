@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation"
 import { RepositoryArrive } from "@/components/clone-veil"
 import { RepositoryControls, RepositoryStudio } from "@/components/repository-studio"
 import { TextAlert } from "@/components/text-alert"
-import { agentLine, watchFor } from "@/lib/desk-agent"
+import { agentLine, drainInbox, watchFor } from "@/lib/desk-agent"
 import { RepositoryTake } from "@/components/repository-take"
 import { WashingtonDossier } from "@/components/washington-dossier"
 import { getCurrentUser } from "@/lib/current"
@@ -68,6 +68,7 @@ export default async function RepositoryPage({
   const requested = query.pull ? await pullForUser(user.id, query.pull) : null
   const spotlight = requested && requested.targetRoomId === room.clone.id ? requested : null
   const watch = await watchFor(user.id, "repository", room.clone.id)
+  if (agentLine()) await drainInbox().catch(() => undefined)
 
   return (
     <div className="repo-arrive mx-auto w-full max-w-5xl px-5 py-12 pb-28">

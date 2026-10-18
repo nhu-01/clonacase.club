@@ -1,3 +1,4 @@
+import { formatPhone } from "@/lib/format"
 import { heldBack } from "@/lib/pull-review"
 import { ensureSpace, ensureUser, listInbound, photonConfig, sendText, type PhotonConfig } from "@/lib/photon"
 import { caseById, newId, readStore, updateStore } from "@/lib/store"
@@ -247,7 +248,7 @@ export async function confirmWatch(watchId: string) {
       })
     } catch (error) {
       console.error("Photon could not open the conversation.", error)
-      return `Saved. Text ${config.handle} from ${watch.phone} so the line can answer.`
+      return `iMessage ${formatPhone(config.handle)} from this number. The reply comes back in that chat.`
     }
   }
   const text =
@@ -263,9 +264,9 @@ export async function confirmWatch(watchId: string) {
     })
   } catch (error) {
     console.error("Photon confirmation did not send.", error)
-    return `Saved. Text ${config.handle} from ${watch.phone} so the line can answer.`
+    return `iMessage ${formatPhone(config.handle)} from this number. The reply comes back in that chat.`
   }
-  return `Following. Texts go to ${watch.phone}.`
+  return "Following. The reply comes back in that iMessage chat."
 }
 
 export async function notifyDesk(input: { roomId: string; authorId: string; kind: string; title: string; eventId: string }) {

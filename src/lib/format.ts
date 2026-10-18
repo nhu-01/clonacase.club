@@ -11,6 +11,15 @@ export function formatDay(iso: string) {
   })
 }
 
+export function formatPhone(value: string) {
+  if (value.includes("@")) return value
+  const digits = value.replace(/\D/g, "")
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
+  }
+  return value
+}
+
 export function formatClock(value: string) {
   const match = /^(\d{2}):(\d{2})$/.exec(value)
   if (!match) return ""

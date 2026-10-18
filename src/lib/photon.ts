@@ -38,6 +38,7 @@ export class PhotonError extends Error {
 
 async function call<T>(config: PhotonConfig, path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API}${path}`, {
+    signal: AbortSignal.timeout(8000),
     ...init,
     headers: {
       Authorization: `Bearer ${config.key}`,
