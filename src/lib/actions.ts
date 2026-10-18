@@ -964,6 +964,7 @@ export async function declinePull(_prev: ActionState, formData: FormData): Promi
   if (error) return { error }
   if (!lastWriteDurable()) return { error: "The pull request did not save." }
   revalidatePath("/pulls")
+  revalidatePath("/", "layout")
   if (sourceId) revalidatePath(`/repository/${sourceId}`)
   if (targetId) revalidatePath(`/repository/${targetId}`)
   return { ok: true }

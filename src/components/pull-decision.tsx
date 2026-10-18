@@ -13,7 +13,7 @@ export function PullDecision({ id }: { id: string }) {
   const error = accepted.error || declined.error
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <form action={accept}>
         <input type="hidden" name="pullId" value={id} />
         <Button type="submit" disabled={accepting || declining} className="h-8 px-3 text-xs">

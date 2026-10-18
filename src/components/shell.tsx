@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { logout } from "@/lib/actions"
+import { NoticeLink } from "@/components/notice-link"
 import type { PublicUser } from "@/lib/types"
 
 function Mark() {
@@ -33,20 +34,7 @@ export function Shell({ user, notices = 0 }: { user: PublicUser | null; notices?
           <Link href="/resources" className="rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2">
             Resources
           </Link>
-          {user ? (
-            <Link
-              href="/pulls"
-              aria-label={notices > 0 ? `PRs, ${notices} waiting` : "PRs"}
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2"
-            >
-              PRs
-              {notices > 0 ? (
-                <span className="grid min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11px] leading-5 font-medium text-primary-foreground">
-                  {notices}
-                </span>
-              ) : null}
-            </Link>
-          ) : null}
+          {user ? <NoticeLink initial={notices} /> : null}
           {user ? (
             <Link href="/rooms" className="rounded-md px-1.5 py-1 transition-colors hover:text-foreground sm:px-2">
               Repository

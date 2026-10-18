@@ -489,6 +489,13 @@ export async function listPulls(userId: string) {
   }
 }
 
+export async function pullForUser(userId: string, pullId: string) {
+  const { sent, received } = await listPulls(userId)
+  const pull = received.find((item) => item.id === pullId) ?? sent.find((item) => item.id === pullId)
+  if (!pull) return null
+  return { ...pull, incoming: pull.targetOwnerId === userId }
+}
+
 export async function caseThreads(caseId: string) {
   const store = await readStore()
   return store.threads
