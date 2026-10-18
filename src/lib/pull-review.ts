@@ -121,7 +121,7 @@ export function localReview(record: WashingtonRecord | null, title: string, body
 }
 
 function tighten(record: WashingtonRecord | null, review: Omit<PullReview, "token" | "source">): Omit<PullReview, "token" | "source"> {
-  if (review.status === "disqualify") return review
+  if (review.status === "disqualify") return { ...review, quote: "", title: "", body: "" }
   const local = localReview(record, review.title, review.body)
   if (local.status === "disqualify") {
     return {
@@ -183,7 +183,7 @@ async function geminiReview(record: WashingtonRecord | null, title: string, body
   ].join("\n")
 
   const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
     {
       method: "POST",
       headers: {
@@ -194,6 +194,7 @@ async function geminiReview(record: WashingtonRecord | null, title: string, body
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.1,
+          thinkingConfig: { thinkingLevel: "low" },
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT",
@@ -209,14 +210,15 @@ async function geminiReview(record: WashingtonRecord | null, title: string, body
           },
         },
       }),
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(20000),
     },
   )
   if (!response.ok) return null
   const payload = (await response.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   }
-  const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text
+  const parts = payload.candidates?.[0]?.content?.parts ?? []
+  const raw = parts.map((part) => part.text ?? "").join("").trim()
   if (!raw) return null
   const parsed = JSON.parse(raw) as Omit<PullReview, "token" | "source">
   if (parsed.status !== "suggest" && parsed.status !== "disqualify") return null
