@@ -17,9 +17,7 @@ Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 ## Sign in
 
-Any made-up email and word will open a desk. The word is thrown away, and the box is not a browser password field, so Chrome does not run a breach check on it. The email and username stay in a signed browser cookie for that visit. Emails and passwords are not written to the database.
-
-The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password works for those too.
+Sign in with an email and password, or choose a username on a first visit. The email, username, and password are not saved.
 
 ## What a room can do
 

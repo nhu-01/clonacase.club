@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useActionState } from "react"
-import { login, signup } from "@/lib/actions"
+import { login } from "@/lib/actions"
 import type { ActionState } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,118 +10,46 @@ import { Label } from "@/components/ui/label"
 
 const initial: ActionState = {}
 
-function DemoDesk({
-  name,
-  email,
-  nextPath,
-}: {
-  name: string
-  email: string
-  nextPath: string
-}) {
-  const [state, action, pending] = useActionState(login, initial)
-  return (
-    <form action={action} className="rounded-2xl border border-border/80 bg-card/60 p-4">
-      <input type="hidden" name="name" value={name} />
-      <input type="hidden" name="email" value={email} />
-      <input type="hidden" name="gate" value="demo" />
-      <input type="hidden" name="next" value={nextPath} />
-      <p className="font-heading text-2xl font-light">{name}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{email}</p>
-      {state.error ? <p className="mt-3 text-sm text-destructive">{state.error}</p> : null}
-      <Button type="submit" disabled={pending} className="mt-4 h-10 w-full">
-        {pending ? "Opening…" : `Continue as ${name.split(" ")[0]}`}
-      </Button>
-    </form>
-  )
-}
-
 export function LoginPanel({ nextPath }: { nextPath: string }) {
   const [state, action, pending] = useActionState(login, initial)
-  const [created, create, creating] = useActionState(signup, initial)
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-16 lg:grid-cols-[1fr_1fr] lg:py-24">
-      <div>
-        <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Sign in</p>
-        <h1 className="mt-4 font-heading text-5xl leading-none font-light tracking-tight sm:text-6xl">
-          Any email will do.
-        </h1>
-        <p className="mt-6 max-w-md text-sm leading-6 text-muted-foreground">
-          Type a made-up email and password. This demo does not check them and does not save them.
-        </p>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <DemoDesk name="Ada Voss" email="ada@clonacase.club" nextPath={nextPath} />
-          <DemoDesk name="Leif Moran" email="leif@clonacase.club" nextPath={nextPath} />
+    <div className="mx-auto w-full max-w-xl px-5 py-16">
+      <p className="font-mono text-[11px] tracking-[0.22em] text-primary uppercase">Sign in</p>
+      <h1 className="mt-4 font-heading text-5xl leading-none font-light tracking-tight">Sign in.</h1>
+      <p className="mt-5 text-sm leading-6 text-muted-foreground">Your email and password are not saved.</p>
+      <form action={action} autoComplete="off" className="mt-8 grid gap-4">
+        <input type="hidden" name="next" value={nextPath} />
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="text" autoComplete="off" className="h-10" required />
         </div>
-      </div>
-      <div className="flex flex-col justify-end gap-10">
-        <form action={action} autoComplete="off" className="grid gap-4">
-          <input type="hidden" name="next" value={nextPath} />
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="text" autoComplete="off" className="h-10" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="gate">Password</Label>
-            <Input
-              id="gate"
-              name="gate"
-              type="text"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              data-1p-ignore="true"
-              data-lpignore="true"
-              className="demo-gate h-10"
-              required
-            />
-            <p className="text-xs leading-5 text-muted-foreground">
-              Any word works. It is thrown away, so Chrome will not check it against a breach list.
-            </p>
-          </div>
-          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
-          <Button type="submit" disabled={pending} className="h-11">
-            {pending ? "Opening…" : "Enter"}
-          </Button>
-        </form>
-        <details className="group">
-          <summary className="cursor-pointer text-sm text-muted-foreground transition-colors hover:text-foreground">
-            Open your own desk
-          </summary>
-          <form action={create} autoComplete="off" className="mt-4 grid gap-4">
-            <input type="hidden" name="next" value={nextPath} />
-            <div className="grid gap-2">
-              <Label htmlFor="name">Anonymous username</Label>
-              <Input id="name" name="name" className="h-10" required minLength={3} maxLength={20} />
-              <p className="text-xs leading-5 text-muted-foreground">Do not use your real name.</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="new-email">Email</Label>
-              <Input id="new-email" name="email" type="text" autoComplete="off" className="h-10" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="new-gate">Password</Label>
-              <Input
-                id="new-gate"
-                name="gate"
-                type="text"
-                autoComplete="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                data-1p-ignore="true"
-                data-lpignore="true"
-                className="demo-gate h-10"
-                required
-              />
-            </div>
-            {created.error ? <p className="text-sm text-destructive">{created.error}</p> : null}
-            <Button type="submit" variant="outline" disabled={creating} className="h-11">
-              {creating ? "Setting the desk…" : "Create a desk"}
-            </Button>
-          </form>
-        </details>
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="gate">Password</Label>
+          <Input
+            id="gate"
+            name="gate"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-1p-ignore="true"
+            data-lpignore="true"
+            className="demo-gate h-10"
+            required
+          />
+        </div>
+        {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+        <Button type="submit" disabled={pending} className="h-11">
+          {pending ? "Opening…" : "Enter"}
+        </Button>
+      </form>
+      <p className="mt-6 text-sm text-muted-foreground">
+        First visit?{" "}
+        <Link href={`/join?next=${encodeURIComponent(nextPath)}`} className="text-foreground underline decoration-primary/40 underline-offset-4">
+          Choose a username
+        </Link>
+      </p>
     </div>
   )
 }

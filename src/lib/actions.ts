@@ -54,7 +54,7 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
   const email = text(formData, "email", 120)
   const password = String(formData.get("gate") ?? formData.get("password") ?? "")
   const given = text(formData, "name", 40)
-  if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
+  if (!email || !password) return { error: "Type an email and a password." }
   const name = given || email.split("@")[0] || "guest"
   await setSession(demoIdentity(name, email))
   redirect(safeNext(formData.get("next")))
@@ -65,7 +65,7 @@ export async function signup(_prev: ActionState, formData: FormData): Promise<Ac
   const email = text(formData, "email", 120)
   const password = String(formData.get("gate") ?? formData.get("password") ?? "")
   if (!name) return { error: "Choose a username. It does not have to be your real name." }
-  if (!email || !password) return { error: "Type an email and a password. Any made-up pair is enough." }
+  if (!email || !password) return { error: "Type an email and a password." }
   await setSession(demoIdentity(name, email))
   redirect(safeNext(formData.get("next")))
 }

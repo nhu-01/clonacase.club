@@ -19,15 +19,12 @@ export function JoinPanel({ nextPath }: { nextPath: string }) {
       <h1 className="mt-4 font-heading text-5xl leading-none font-light tracking-tight">
         Choose an anonymous username.
       </h1>
-      <p className="mt-5 text-sm leading-6 text-muted-foreground">
-        This is a demo. Any made-up email and password will open the timeline. They are not saved.
-      </p>
+      <p className="mt-5 text-sm leading-6 text-muted-foreground">Your username and password are not saved.</p>
       <form action={action} autoComplete="off" className="mt-8 grid gap-4">
         <input type="hidden" name="next" value={nextPath} />
         <div className="grid gap-2">
           <Label htmlFor="name">Anonymous username</Label>
           <Input id="name" name="name" autoComplete="off" className="h-10" required />
-          <p className="text-xs leading-5 text-muted-foreground">Do not use your real name.</p>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
@@ -47,9 +44,6 @@ export function JoinPanel({ nextPath }: { nextPath: string }) {
             className="demo-gate h-10"
             required
           />
-          <p className="text-xs leading-5 text-muted-foreground">
-            Any word works. It is thrown away, so Chrome will not check it against a breach list.
-          </p>
         </div>
         {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
         <Button type="submit" disabled={pending} className="h-11">
