@@ -404,6 +404,61 @@ html.clone-opening body > :not(.clone-veil) {
   transform: rotate(45deg);
 }
 
+.item-card {
+  transition:
+    border-color 0.35s ease,
+    background-color 0.35s ease;
+}
+
+.item-card.is-editing {
+  border-color: var(--primary);
+}
+
+.edit-swap {
+  display: grid;
+  grid-template-rows: 1fr 0fr;
+  transition: grid-template-rows 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.edit-swap.is-open {
+  grid-template-rows: 0fr 1fr;
+}
+
+.edit-pane {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.edit-pane-inner {
+  transition:
+    opacity 0.32s ease,
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.edit-swap .edit-pane:first-child .edit-pane-inner {
+  opacity: 1;
+  transform: none;
+}
+
+.edit-swap .edit-pane:last-child .edit-pane-inner {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.edit-swap.is-open .edit-pane:first-child .edit-pane-inner {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.edit-swap.is-open .edit-pane:last-child .edit-pane-inner {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 0.08s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.clone-opening body > :not(.clone-veil) {
     opacity: 1;
@@ -434,7 +489,10 @@ html.clone-opening body > :not(.clone-veil) {
 
   .plus-sheet,
   .plus-choice,
-  .repo-plus-icon {
+  .repo-plus-icon,
+  .edit-swap,
+  .edit-pane-inner,
+  .item-card {
     transition: none;
   }
 }
