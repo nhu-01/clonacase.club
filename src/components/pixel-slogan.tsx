@@ -56,13 +56,14 @@ export function PixelSlogan() {
       const lines = [...rootEl.querySelectorAll<HTMLElement>("[data-slogan]")]
       for (const line of lines) {
         const style = getComputedStyle(line)
-        const rect = line.getBoundingClientRect()
+        const range = document.createRange()
+        range.selectNodeContents(line)
+        const ink = range.getBoundingClientRect()
         ctx.font = style.font
         ctx.fillStyle = style.color
-        ctx.textBaseline = "alphabetic"
-        const sample = ctx.measureText(line.textContent || "")
-        const ascent = sample.fontBoundingBoxAscent || Number.parseFloat(style.fontSize) * 0.78
-        ctx.fillText(line.textContent || "", (rect.left - box.left) * dpr, (rect.top - box.top) * dpr + ascent)
+        ctx.letterSpacing = style.letterSpacing
+        ctx.textBaseline = "top"
+        ctx.fillText(line.textContent || "", (ink.left - box.left) * dpr, (ink.top - box.top) * dpr)
       }
 
       const cell = Math.max(2, Math.round(3.5 * dpr))
