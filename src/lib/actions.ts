@@ -7,12 +7,14 @@ import { getCurrentUser } from "@/lib/current"
 import { isHttpUrl, isInternalPath, safeNext } from "@/lib/format"
 import { clearSession, demoIdentity, setSession } from "@/lib/session"
 import { posterBeats } from "@/lib/poster-beats"
+import { reviewDraft, verifyReview } from "@/lib/pull-review"
 import {
   authorName,
   caseById,
   getRoom,
   lastWriteDurable,
   newId,
+  readStore,
   updateStore,
 } from "@/lib/store"
 import { washingtonById } from "@/lib/washington-public"
@@ -837,8 +839,21 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
     return { error: "Choose a note, media, or a hypothetical event." }
   }
 
+  const intent = text(formData, "intent", 20)
   let payload: { title: string; body: string; date: string; mediaKind: MediaKind | ""; url: string }
-  if (pull === "note") {
+  if (intent === "send") {
+    const signed = verifyReview(text(formData, "reviewToken", 12000))
+    if (!signed || signed.roomId !== roomId || signed.pull !== pull) {
+      return { error: "Check the note again before sending." }
+    }
+    payload = {
+      title: signed.title,
+      body: signed.body,
+      date: signed.date,
+      mediaKind: (signed.mediaKind || "") as MediaKind | "",
+      url: signed.url,
+    }
+  } else if (pull === "note") {
     const fields = readEvidence(formData)
     if ("error" in fields) return { error: fields.error }
     payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
@@ -852,28 +867,44 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
     payload = { title: fields.title, body: fields.body, date: fields.date, mediaKind: "", url: "" }
   }
 
+  const preview = await readStore()
+  const fork = preview.clones.find((item) => item.id === roomId)
+  if (!fork || fork.ownerId !== user.id || fork.lineage !== "fork" || !fork.sourceRoomId) {
+    return { error: "Only a fork can send a pull request." }
+  }
+  const target = preview.clones.find((item) => item.id === fork.sourceRoomId)
+  if (!target) return { error: "The original repository is gone." }
+  if (intent !== "send") {
+    const review = await reviewDraft(washingtonById(fork.caseId), {
+      roomId,
+      pull,
+      title: payload.title,
+      body: payload.body,
+      date: payload.date,
+      url: payload.url,
+      mediaKind: payload.mediaKind,
+    })
+    return { review }
+  }
+
   let error = ""
   let caseId = ""
   let targetId = ""
   await updateStore((store) => {
-    const fork = store.clones.find((item) => item.id === roomId)
-    if (!fork || fork.ownerId !== user.id || fork.lineage !== "fork" || !fork.sourceRoomId) {
+    const current = store.clones.find((item) => item.id === roomId)
+    const original = store.clones.find((item) => item.id === fork.sourceRoomId)
+    if (!current || current.ownerId !== user.id || current.lineage !== "fork" || !original) {
       error = "Only a fork can send a pull request."
-      return
-    }
-    const target = store.clones.find((item) => item.id === fork.sourceRoomId)
-    if (!target) {
-      error = "The original repository is gone."
       return
     }
     if (!store.pulls) store.pulls = []
     store.pulls.push({
       id: newId("pull"),
-      sourceRoomId: fork.id,
-      targetRoomId: target.id,
+      sourceRoomId: current.id,
+      targetRoomId: original.id,
       authorId: user.id,
-      targetOwnerId: target.ownerId,
-      caseId: fork.caseId,
+      targetOwnerId: original.ownerId,
+      caseId: current.caseId,
       kind: pull,
       status: "open",
       createdAt: new Date().toISOString(),
@@ -883,8 +914,8 @@ export async function submitPull(_prev: ActionState, formData: FormData): Promis
       mediaKind: payload.mediaKind,
       url: payload.url,
     })
-    caseId = fork.caseId
-    targetId = target.id
+    caseId = current.caseId
+    targetId = original.id
   })
   if (error) return { error }
   if (!lastWriteDurable()) return { error: "The pull request did not save." }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useActionState } from "react"
 import { Plus } from "lucide-react"
@@ -349,6 +349,61 @@ function SuspectCheck({ id }: { id: string }) {
   )
 }
 
+function PullSubmit({ state, pending }: { state: ActionState; pending: boolean }) {
+  const [fresh, setFresh] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const review = state.review
+  useEffect(() => {
+    if (review) setFresh(true)
+  }, [review])
+  useEffect(() => {
+    const form = root.current?.closest("form")
+    if (!form) return
+    const onInput = (event: Event) => {
+      const target = event.target
+      if (target instanceof HTMLInputElement && (target.type === "checkbox" || target.type === "hidden")) return
+      setFresh(false)
+    }
+    form.addEventListener("input", onInput)
+    form.addEventListener("change", onInput)
+    return () => {
+      form.removeEventListener("input", onInput)
+      form.removeEventListener("change", onInput)
+    }
+  }, [])
+  const shown = fresh && review?.status === "suggest" ? review : null
+  const blocked = fresh && review?.status === "disqualify"
+
+  return (
+    <div ref={root} className="grid gap-3">
+      {shown ? (
+        <div className="border border-primary/35 bg-primary/5 p-3">
+          <p className="font-mono text-[11px] tracking-[0.16em] text-primary uppercase">
+            {shown.source === "gemini" ? "Gemini" : "Checked here"}
+          </p>
+          {shown.quote ? <p className="mt-2 text-sm leading-5 text-muted-foreground italic">“{shown.quote}”</p> : null}
+          <p className="mt-2 font-heading text-xl font-light">{shown.title}</p>
+          {shown.body ? <p className="mt-1 text-sm leading-5">{shown.body}</p> : null}
+          {shown.dropped ? <p className="mt-2 text-xs leading-5 text-muted-foreground">Held back: {shown.dropped}</p> : null}
+          {shown.source === "local" ? (
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">Add a Gemini API key to run this check with Gemini.</p>
+          ) : null}
+          <input type="hidden" name="intent" value="send" />
+          <input type="hidden" name="acknowledge" value="yes" />
+          <input type="hidden" name="reviewToken" value={shown.token} />
+        </div>
+      ) : (
+        <input type="hidden" name="intent" value="review" />
+      )}
+      {blocked ? <p className="text-sm text-destructive">{review?.reason}</p> : null}
+      {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+      <Button type="submit" formNoValidate={Boolean(shown)} disabled={pending} className="h-10">
+        {pending ? "Working…" : shown ? "Send this pull request" : "Check before sending"}
+      </Button>
+    </div>
+  )
+}
+
 export function RepositoryStudio({
   roomId,
   canEdit,
@@ -509,7 +564,7 @@ export function RepositoryStudio({
                   </p>
                   {propose ? (
                     <p className="plus-choice text-sm leading-5 text-muted-foreground">
-                      It goes to the original desk. Nothing is added there until they accept it. A hypothetical line is a reading, not a finding.
+                      Gemini checks the note before it can be sent. Nothing is added on the original desk until they accept it.
                     </p>
                   ) : null}
                   <button type="button" className="plus-choice py-2 text-left font-heading text-2xl font-light" onClick={() => setOpen("note")}>
@@ -542,10 +597,16 @@ export function RepositoryStudio({
                   <Label htmlFor="note-body">Note</Label>
                   <Textarea id="note-body" name="body" />
                   {propose ? <SuspectCheck id="note-ack" /> : null}
-                  {addedNote.error ? <p className="text-sm text-destructive">{addedNote.error}</p> : null}
-                  <Button type="submit" disabled={addingNote} className="h-10">
-                    {addingNote ? "Saving…" : propose ? "Submit pull request" : "Save note"}
-                  </Button>
+                  {propose ? (
+                    <PullSubmit state={addedNote} pending={addingNote} />
+                  ) : (
+                    <>
+                      {addedNote.error ? <p className="text-sm text-destructive">{addedNote.error}</p> : null}
+                      <Button type="submit" disabled={addingNote} className="h-10">
+                        {addingNote ? "Saving…" : "Save note"}
+                      </Button>
+                    </>
+                  )}
                 </form>
               ) : null}
               {view === "media" ? (
@@ -568,10 +629,16 @@ export function RepositoryStudio({
                   <Label htmlFor="media-note">Note</Label>
                   <Textarea id="media-note" name="note" />
                   {propose ? <SuspectCheck id="media-ack" /> : null}
-                  {addedMedia.error ? <p className="text-sm text-destructive">{addedMedia.error}</p> : null}
-                  <Button type="submit" disabled={addingMedia} className="h-10">
-                    {addingMedia ? "Saving…" : propose ? "Submit pull request" : "Save media"}
-                  </Button>
+                  {propose ? (
+                    <PullSubmit state={addedMedia} pending={addingMedia} />
+                  ) : (
+                    <>
+                      {addedMedia.error ? <p className="text-sm text-destructive">{addedMedia.error}</p> : null}
+                      <Button type="submit" disabled={addingMedia} className="h-10">
+                        {addingMedia ? "Saving…" : "Save media"}
+                      </Button>
+                    </>
+                  )}
                 </form>
               ) : null}
               {view === "hypothetical" ? (
@@ -601,10 +668,16 @@ export function RepositoryStudio({
                     <Label htmlFor="hy-body">What you are considering</Label>
                     <Textarea id="hy-body" name="body" />
                     {propose ? <SuspectCheck id="hy-ack" /> : null}
-                    {addedEvent.error ? <p className="text-sm text-destructive">{addedEvent.error}</p> : null}
-                    <Button type="submit" disabled={addingEvent} className="h-10">
-                      {addingEvent ? "Saving…" : propose ? "Submit pull request" : "Add to the line"}
-                    </Button>
+                    {propose ? (
+                      <PullSubmit state={addedEvent} pending={addingEvent} />
+                    ) : (
+                      <>
+                        {addedEvent.error ? <p className="text-sm text-destructive">{addedEvent.error}</p> : null}
+                        <Button type="submit" disabled={addingEvent} className="h-10">
+                          {addingEvent ? "Saving…" : "Add to the line"}
+                        </Button>
+                      </>
+                    )}
                   </form>
                 </div>
               ) : null}

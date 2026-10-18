@@ -35,6 +35,8 @@ The sign-in page also has two shortcuts, Ada Voss and Leif Moran. Any password w
 
 clonacase stores the timeline in MongoDB when `MONGODB_URI` connects. Poster dates live in the `posterEvents` collection. A private repository, including its notes, is one document in `repositories`. Discussion posts are in `threads`. Pull requests are in `pulls`. If that database refuses the connection, the same desk is kept in a private Vercel Blob file instead, so a clone still saves. Emails and passwords are not fields in any document.
 
+A fork checks a pull request before it can be sent. Set `GEMINI_API_KEY` to a Gemini API key and that check uses Gemini. Without the key, the same check runs on the server and still holds back a suspect, a private address, or a family member who is not on the poster.
+
 Set `MONGODB_URI` to a MongoDB connection string. Locally that is:
 
 ```bash

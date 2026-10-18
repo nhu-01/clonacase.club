@@ -175,6 +175,16 @@ export type Store = {
 export type ActionState = {
   error?: string
   ok?: boolean
+  review?: {
+    status: "suggest" | "disqualify"
+    quote: string
+    title: string
+    body: string
+    dropped: string
+    reason: string
+    source: "gemini" | "local"
+    token: string
+  }
 }
 
 export type MilestoneView = Milestone & { authorName: string }
