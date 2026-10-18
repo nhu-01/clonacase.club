@@ -269,6 +269,34 @@ export async function confirmWatch(watchId: string) {
   return "Following. The reply comes back in that iMessage chat."
 }
 
+async function chatFor(config: PhotonConfig, watch: { id: string; phone: string; spaceId: string; agentUserId: string }) {
+  if (watch.spaceId && watch.agentUserId) return { spaceId: watch.spaceId, agentUserId: watch.agentUserId }
+  try {
+    const opened = await openConversation(config, watch.phone)
+    await updateStore((store) => {
+      for (const item of store.alerts ?? []) {
+        if (item.phone !== watch.phone) continue
+        item.spaceId = opened.spaceId
+        item.agentUserId = opened.agentUserId
+      }
+    })
+    return opened
+  } catch (error) {
+    console.error("Photon could not open the subscriber chat.", error)
+    return null
+  }
+}
+
+export function watchesForRoom<T extends { kind: string; targetId: string }>(
+  room: { id: string; caseId: string; visibility: string },
+  alerts: T[],
+) {
+  return alerts.filter((watch) => {
+    if (watch.kind === "repository") return watch.targetId === room.id
+    return watch.kind === "case" && watch.targetId === room.caseId && room.visibility === "public"
+  })
+}
+
 export async function notifyDesk(input: { roomId: string; authorId: string; kind: string; title: string; eventId: string }) {
   const config = photonConfig()
   if (!config) return
@@ -277,23 +305,24 @@ export async function notifyDesk(input: { roomId: string; authorId: string; kind
   if (!room) return
   const file = caseById(room.caseId)
   const label = file?.name ?? "a case"
-  const watches = (store.alerts ?? []).filter((watch) => {
-    if (watch.userId && watch.userId === input.authorId) return false
-    if (watch.kind === "repository") return watch.targetId === room.id
-    return watch.kind === "case" && watch.targetId === room.caseId && room.visibility === "public"
-  })
+  const watches = watchesForRoom(room, store.alerts ?? [])
   if (!watches.length) return
   const noun = input.kind === "media" ? "New source" : input.kind === "hypothetical" ? "New hypothetical event" : "New note"
-  const text = `${label}: ${noun}. ${cleanTitle(input.title)}. ${SITE}/repository/${room.id}`
+  const where = room.visibility === "public" ? "a public repository" : "this repository"
+  const text = `${label}: ${noun} on ${where}. ${cleanTitle(input.title)}. ${SITE}/repository/${room.id}`
+  const seen = new Set<string>()
   for (const watch of watches) {
-    if (!watch.spaceId || !watch.agentUserId) continue
+    if (seen.has(watch.phone)) continue
+    const chat = await chatFor(config, watch)
+    if (!chat) continue
     try {
       await sendText(config, {
-        spaceId: watch.spaceId,
-        senderId: watch.agentUserId,
+        spaceId: chat.spaceId,
+        senderId: chat.agentUserId,
         text,
         idempotencyKey: `clonacase-alert-${input.eventId}-${watch.id}`,
       })
+      seen.add(watch.phone)
     } catch (error) {
       console.error("Photon alert did not send.", error)
     }

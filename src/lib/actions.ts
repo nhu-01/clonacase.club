@@ -166,6 +166,7 @@ export async function addMilestone(_prev: ActionState, formData: FormData): Prom
     clone.brief = null
   })
   refresh(roomId, room.caseFile.id)
+  await notifyDesk({ roomId, authorId: user.id, kind: "note", title, eventId: milestone.id })
   return { ok: true }
 }
 
@@ -178,9 +179,10 @@ export async function postMessage(_prev: ActionState, formData: FormData): Promi
   if (!room || room.locked) return { error: "This room is private." }
   if (body.length < 1) return { error: "Write a note first." }
 
+  const messageId = newId("msg")
   await updateStore((store) => {
     store.messages.push({
-      id: newId("msg"),
+      id: messageId,
       cloneId: roomId,
       authorId: user.id,
       body,
@@ -189,6 +191,7 @@ export async function postMessage(_prev: ActionState, formData: FormData): Promi
     })
   })
   refresh(roomId, room.caseFile.id)
+  await notifyDesk({ roomId, authorId: user.id, kind: "note", title: body, eventId: messageId })
   return { ok: true }
 }
 
@@ -214,6 +217,7 @@ export async function pinMessage(_prev: ActionState, formData: FormData): Promis
   if (!message) return { error: "That note is gone." }
   if (message.pinnedMilestoneId) return { error: "That note is already on the timeline." }
 
+  let pinnedId = ""
   await updateStore((store) => {
     const clone = store.clones.find((item) => item.id === roomId)
     const note = store.messages.find((item) => item.id === messageId && item.cloneId === roomId)
@@ -235,8 +239,10 @@ export async function pinMessage(_prev: ActionState, formData: FormData): Promis
     clone.milestones.push(milestone)
     clone.brief = null
     note.pinnedMilestoneId = milestone.id
+    pinnedId = milestone.id
   })
   refresh(roomId, room.caseFile.id)
+  if (pinnedId) await notifyDesk({ roomId, authorId: user.id, kind: "note", title, eventId: pinnedId })
   return { ok: true }
 }
 
